@@ -1,0 +1,97 @@
+@model ParcelDeliverySystem.ViewModels.Auth.RegisterViewModel
+@{
+    ViewData["Title"] = "Customer Registration";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="pds-card shadow-lg border-0" style="border-radius: 20px;">
+                <div class="pds-card-body p-4 p-md-5">
+
+                    <div class="text-center mb-4">
+                        <div class="brand-icon mx-auto mb-3" style="width: 50px; height: 50px; font-size: 1.4rem;">
+                            <i class="bi bi-person-plus-fill"></i>
+                        </div>
+                        <h3 class="fw-bold mb-1">Create Customer Account</h3>
+                        <p class="text-muted small">Book parcels, save addresses, and track real-time shipments</p>
+                    </div>
+
+                    <form asp-action="Register" method="post">
+                        @Html.AntiForgeryToken()
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small" role="alert"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="FullName" class="form-label small fw-semibold text-secondary">Full Name</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-person"></i></span>
+                                <input asp-for="FullName" class="form-control border-start-0" placeholder="e.g. John Doe" />
+                            </div>
+                            <span asp-validation-for="FullName" class="text-danger small"></span>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="Email" class="form-label small fw-semibold text-secondary">Email Address</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-envelope"></i></span>
+                                    <input asp-for="Email" class="form-control border-start-0" placeholder="name@example.com" />
+                                </div>
+                                <span asp-validation-for="Email" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="PhoneNumber" class="form-label small fw-semibold text-secondary">Phone Number</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-telephone"></i></span>
+                                    <input asp-for="PhoneNumber" class="form-control border-start-0" placeholder="+1 (555) 000-0000" />
+                                </div>
+                                <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="Password" class="form-label small fw-semibold text-secondary">Password</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-lock"></i></span>
+                                    <input asp-for="Password" class="form-control border-start-0" placeholder="••••••••" />
+                                </div>
+                                <span asp-validation-for="Password" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="ConfirmPassword" class="form-label small fw-semibold text-secondary">Confirm Password</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-shield-check"></i></span>
+                                    <input asp-for="ConfirmPassword" class="form-control border-start-0" placeholder="••••••••" />
+                                </div>
+                                <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-4 form-check">
+                            <input asp-for="AgreeToTerms" class="form-check-input" />
+                            <label asp-for="AgreeToTerms" class="form-check-label small text-secondary">
+                                I agree to the <a asp-controller="Home" asp-action="Privacy" target="_blank" class="text-primary text-decoration-none">Terms of Service & Privacy Policy</a>
+                            </label>
+                            <div><span asp-validation-for="AgreeToTerms" class="text-danger small"></span></div>
+                        </div>
+
+                        <button type="submit" class="btn btn-pds-primary w-100 py-2 fw-bold">
+                            <i class="bi bi-check2-circle me-1"></i> Complete Registration
+                        </button>
+                    </form>
+
+                    <div class="text-center mt-4 pt-2 border-top">
+                        <span class="text-muted small">Already have an account?</span>
+                        <a asp-action="Login" class="text-primary fw-semibold small text-decoration-none ms-1">Sign In</a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

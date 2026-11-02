@@ -1,0 +1,201 @@
+@model ParcelDeliverySystem.ViewModels.Admin.AdminAgentDetailViewModel
+@using ParcelDeliverySystem.Models.Enums
+@{
+    ViewData["Title"] = $"Agent Performance - {Model.Agent.FullName}";
+    var a = Model.Agent;
+}
+
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Dashboard">Admin Dashboard</a></li>
+            <li class="breadcrumb-item"><a asp-action="Agents">Fleet</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@a.FullName</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <h3 class="fw-bold mb-1">@a.FullName</h3>
+            <p class="text-muted small mb-0">Courier Partner ID: <span class="font-monospace">@a.Id</span> &bull; Rating: <strong>@a.Rating.ToString("F1") ★</strong></p>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="EditAgent" asp-route-id="@a.Id" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                <i class="bi bi-pencil me-1"></i> Edit Profile
+            </a>
+            <a asp-action="Agents" class="btn btn-outline-secondary btn-sm rounded-pill px-3">Back to Fleet</a>
+        </div>
+    </div>
+
+    <!-- Summary Metrics -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+            <div class="stat-card">
+                <div class="stat-icon primary">
+                    <i class="bi bi-box-seam"></i>
+                </div>
+                <div>
+                    <div class="stat-value">@(Model.ActiveDeliveries.Count + Model.CompletedDeliveries.Count)</div>
+                    <div class="stat-label">Total Assigned Runs</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-3">
+            <div class="stat-card">
+                <div class="stat-icon success">
+                    <i class="bi bi-check-circle-fill"></i>
+                </div>
+                <div>
+                    <div class="stat-value">@Model.CompletedDeliveries.Count(p => p.Status == ParcelStatus.Delivered)</div>
+                    <div class="stat-label">Delivered Successfully</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-3">
+            <div class="stat-card">
+                <div class="stat-icon warning">
+                    <i class="bi bi-truck"></i>
+                </div>
+                <div>
+                    <div class="stat-value">@Model.ActiveDeliveries.Count</div>
+                    <div class="stat-label">Active Drop-offs</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-3">
+            <div class="stat-card">
+                <div class="stat-icon accent">
+                    <i class="bi bi-graph-up"></i>
+                </div>
+                <div>
+                    <div class="stat-value">@Model.SuccessRate.ToString("F1")%</div>
+                    <div class="stat-label">Fulfillment Success Rate</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Agent Profile & Vehicle Specs -->
+        <div class="col-lg-4">
+            <div class="pds-card p-4 mb-4 shadow-sm border-0" style="border-radius: 16px;">
+                <h5 class="fw-bold mb-3"><i class="bi bi-person-badge me-2 text-primary"></i>Courier Profile</h5>
+                <div class="mb-2">
+                    <span class="text-muted extra-small">Email:</span>
+                    <div class="fw-semibold small">@a.Email</div>
+                </div>
+                <div class="mb-2">
+                    <span class="text-muted extra-small">Phone:</span>
+                    <div class="fw-semibold small font-monospace">@a.PhoneNumber</div>
+                </div>
+                <div class="mb-2">
+                    <span class="text-muted extra-small">Depot Address:</span>
+                    <div class="small">@(a.Address ?? "Not specified")</div>
+                </div>
+                <div class="mb-2">
+                    <span class="text-muted extra-small">Vehicle Type:</span>
+                    <div class="fw-semibold small">@(a.VehicleType ?? "Standard Courier")</div>
+                </div>
+                <div class="mb-2">
+                    <span class="text-muted extra-small">License Plate:</span>
+                    <div class="small font-monospace">@(a.VehiclePlateNumber ?? "N/A")</div>
+                </div>
+                <div class="mb-2">
+                    <span class="text-muted extra-small">Driving License:</span>
+                    <div class="small font-monospace">@(a.DrivingLicenseNumber ?? "N/A")</div>
+                </div>
+                <div class="mb-2">
+                    <span class="text-muted extra-small">Availability Status:</span>
+                    <div>
+                        <span class="badge @(a.AvailabilityStatus == AgentAvailabilityStatus.Available ? "bg-success" : a.AvailabilityStatus == AgentAvailabilityStatus.Busy ? "bg-warning text-dark" : "bg-secondary") rounded-pill">
+                            @a.AvailabilityStatus
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Agent Operational GPS Map Card -->
+            <div class="pds-card shadow-sm border-0 mb-4 overflow-hidden" style="border-radius: 16px;">
+                <div class="pds-card-header bg-white py-3 px-3 border-bottom d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-geo-alt-fill text-danger"></i>
+                        <span class="fw-bold small">Current Zone / Depot Map</span>
+                    </div>
+                    <span class="badge bg-light text-dark border extra-small">OpenStreetMap</span>
+                </div>
+                <div id="agentLocationMap" style="height: 240px; width: 100%;"></div>
+            </div>
+        </div>
+
+        <!-- Deliveries Table -->
+        <div class="col-lg-8">
+            <div class="pds-card shadow-sm border-0 mb-4" style="border-radius: 16px;">
+                <div class="pds-card-header bg-white py-3 px-4 border-bottom">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-truck me-2 text-success"></i>Active & Recent Shipments</h5>
+                </div>
+                <div class="pds-card-body p-0">
+                    @{
+                        var allRuns = Model.ActiveDeliveries.Concat(Model.CompletedDeliveries).OrderByDescending(p => p.BookingDate).ToList();
+                    }
+                    @if (allRuns.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0 small">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Tracking Code</th>
+                                        <th>Destination</th>
+                                        <th>Weight</th>
+                                        <th>Status</th>
+                                        <th>Delivered / Updated</th>
+                                        <th class="text-end">Track</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var p in allRuns)
+                                    {
+                                        <tr>
+                                            <td><span class="tracking-code font-monospace fw-bold text-primary">@p.TrackingId</span></td>
+                                            <td><div class="text-truncate" style="max-width: 160px;">@p.DeliveryAddress.City</div></td>
+                                            <td>@p.Weight.ToString("F1") kg</td>
+                                            <td>
+                                                <span class="badge @(p.Status == ParcelStatus.Delivered ? "bg-success" : p.Status == ParcelStatus.DeliveryFailed ? "bg-danger" : "bg-warning text-dark") rounded-pill">
+                                                    @p.Status
+                                                </span>
+                                            </td>
+                                            <td class="text-muted">
+                                                @(p.DeliveredAt.HasValue ? p.DeliveredAt.Value.ToString("MMM dd, hh:mm tt") : p.BookingDate.ToString("MMM dd, yyyy"))
+                                            </td>
+                                            <td class="text-end">
+                                                <a asp-controller="Tracking" asp-action="Track" asp-route-trackingId="@p.TrackingId" class="btn btn-sm btn-outline-secondary rounded-pill py-0 px-2">View</a>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center p-4 text-muted small">No delivery records found for this agent.</div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const lat = parseFloat('@(a.CurrentLatitude ?? 44.0521)') || 44.0521;
+            const lon = parseFloat('@(a.CurrentLongitude ?? -123.0189)') || -123.0189;
+            if (window.ParcelMap) {
+                window.ParcelMap.initSingleMap('agentLocationMap', lat, lon, 'Courier Depot: @a.FullName');
+            }
+        });
+    </script>
+}

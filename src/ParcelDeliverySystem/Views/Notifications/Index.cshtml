@@ -1,0 +1,111 @@
+@model IReadOnlyList<ParcelDeliverySystem.Models.Entities.Notification>
+@using ParcelDeliverySystem.Models.Enums
+@{
+    ViewData["Title"] = "Notifications & Alerts";
+    var unreadCount = Model?.Count(n => !n.IsRead) ?? 0;
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+                <div>
+                    <div class="d-flex align-items-center gap-2">
+                        <h3 class="fw-bold mb-0">Notifications</h3>
+                        @if (unreadCount > 0)
+                        {
+                            <span class="badge bg-danger rounded-pill px-3 py-1">
+                                @unreadCount unread
+                            </span>
+                        }
+                    </div>
+                    <p class="text-muted small mb-0 mt-1">Real-time status updates, delivery milestones, and account alerts.</p>
+                </div>
+
+                @if (unreadCount > 0)
+                {
+                    <form asp-controller="Notifications" asp-action="MarkAllAsRead" method="post">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                            <i class="bi bi-check2-all me-1"></i> Mark All as Read
+                        </button>
+                    </form>
+                }
+            </div>
+
+            @if (Model != null && Model.Any())
+            {
+                <div class="pds-card shadow-sm border-0 p-0 overflow-hidden" style="border-radius: 16px;">
+                    <div class="list-group list-group-flush">
+                        @foreach (var notif in Model)
+                        {
+                            var iconClass = notif.Type switch
+                            {
+                                NotificationType.BookingConfirmation => "bi-box-seam text-primary",
+                                NotificationType.AgentAssigned => "bi-truck text-success",
+                                NotificationType.StatusUpdate => "bi-arrow-repeat text-info",
+                                NotificationType.Delivered => "bi-check-circle-fill text-success",
+                                NotificationType.Alert => "bi-exclamation-triangle-fill text-warning",
+                                _ => "bi-bell text-secondary"
+                            };
+
+                            var bgStyle = notif.IsRead ? "bg-white" : "background-color: #f0fdf4 !important;";
+
+                            <div class="list-group-item p-4 transition-all" style="@bgStyle">
+                                <div class="d-flex align-items-start gap-3">
+                                    <div class="avatar-circle flex-shrink-0" style="width: 44px; height: 44px; background: #f8fafc; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+                                        <i class="bi @iconClass"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <h6 class="fw-bold mb-1 text-dark">
+                                                @notif.Title
+                                                @if (!notif.IsRead)
+                                                {
+                                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill extra-small ms-2" style="font-size: 0.65rem;">NEW</span>
+                                                }
+                                            </h6>
+                                            <span class="text-muted extra-small" style="font-size: 0.75rem;">
+                                                @notif.CreatedAt.ToString("MMM dd, yyyy hh:mm tt")
+                                            </span>
+                                        </div>
+                                        <p class="text-secondary small mb-2">@notif.Message</p>
+                                        
+                                        <div class="d-flex align-items-center gap-2">
+                                            @if (!string.IsNullOrEmpty(notif.ReferenceId))
+                                            {
+                                                <a asp-controller="Tracking" asp-action="Track" asp-route-trackingId="@notif.ReferenceId" class="btn btn-sm btn-outline-primary rounded-pill py-0 px-2" style="font-size: 0.75rem;">
+                                                    <i class="bi bi-box-arrow-up-right me-1"></i> Track Shipment
+                                                </a>
+                                            }
+                                            
+                                            @if (!notif.IsRead)
+                                            {
+                                                <form asp-controller="Notifications" asp-action="MarkAsRead" asp-route-id="@notif.Id" method="post" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="btn btn-sm btn-link text-muted p-0 text-decoration-none" style="font-size: 0.75rem;">
+                                                        <i class="bi bi-check me-1"></i> Mark as read
+                                                    </button>
+                                                </form>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="pds-card p-5 text-center shadow-sm border-0" style="border-radius: 16px;">
+                    <div class="avatar-circle mx-auto mb-3" style="width: 60px; height: 60px; background: #f1f5f9; color: #64748b; font-size: 1.75rem; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
+                        <i class="bi bi-bell-slash"></i>
+                    </div>
+                    <h5 class="fw-bold">No Notifications Yet</h5>
+                    <p class="text-muted small mb-0">You're all caught up! As shipments progress or status changes occur, you will receive updates here.</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>

@@ -1,0 +1,238 @@
+@model ParcelDeliverySystem.Models.Entities.Address
+@{
+    ViewData["Title"] = "Add New Address";
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <div>
+                    <h3 class="fw-bold mb-1">Add New Address</h3>
+                    <p class="text-muted small mb-0">Save a new pickup or drop-off location to your address book</p>
+                </div>
+                <a asp-action="Addresses" class="btn btn-pds-outline btn-sm">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Addresses
+                </a>
+            </div>
+
+            <div class="pds-card shadow-sm border-0" style="border-radius: 16px;">
+                <div class="pds-card-body p-4">
+                    <form asp-action="CreateAddress" method="post">
+                        @Html.AntiForgeryToken()
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
+
+                        <!-- Top Quick GPS Action -->
+                        <div class="p-3 mb-4 rounded bg-light border d-flex flex-wrap align-items-center justify-content-between gap-2">
+                            <div>
+                                <strong class="small d-block text-dark"><i class="bi bi-crosshair text-primary me-1"></i> Fast GPS Address Detection</strong>
+                                <span class="extra-small text-muted" style="font-size: 0.75rem;">Detect your exact device location and fill this form automatically</span>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3" id="btnGpsLocate" onclick="locateCurrentPosition()">
+                                <i class="bi bi-geo-alt me-1"></i> Use My Current Location
+                            </button>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="Label" class="form-label small fw-semibold text-secondary">Address Label</label>
+                                <input asp-for="Label" class="form-control" id="addrLabel" placeholder="e.g. Home, Office, Warehouse" required />
+                                <span asp-validation-for="Label" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="RecipientName" class="form-label small fw-semibold text-secondary">Contact / Recipient Name</label>
+                                <input asp-for="RecipientName" class="form-control" placeholder="e.g. Alice Walker" required />
+                                <span asp-validation-for="RecipientName" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="PhoneNumber" class="form-label small fw-semibold text-secondary">Phone Number</label>
+                                <input asp-for="PhoneNumber" class="form-control" placeholder="+1 (555) 000-0000" required />
+                                <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="UnitOrApt" class="form-label small fw-semibold text-secondary">Suite / Apt / Floor (Optional)</label>
+                                <input asp-for="UnitOrApt" class="form-control" placeholder="e.g. Apt 4B" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3 position-relative">
+                            <label asp-for="StreetAddress" class="form-label small fw-semibold text-secondary">Street Address (Type or click map below)</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i class="bi bi-geo-alt text-primary"></i></span>
+                                <input asp-for="StreetAddress" class="form-control border-start-0" id="addrStreet" placeholder="e.g. 742 Evergreen Terrace" autocomplete="off" required />
+                            </div>
+                            <div id="autocompleteResults" class="list-group position-absolute w-100 shadow-lg mt-1 d-none" style="z-index: 1050; max-height: 200px; overflow-y: auto;"></div>
+                            <span asp-validation-for="StreetAddress" class="text-danger small"></span>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <label asp-for="City" class="form-label small fw-semibold text-secondary">City</label>
+                                <input asp-for="City" class="form-control" id="addrCity" placeholder="City" required />
+                                <span asp-validation-for="City" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="State" class="form-label small fw-semibold text-secondary">State / Province</label>
+                                <input asp-for="State" class="form-control" id="addrState" placeholder="State" required />
+                                <span asp-validation-for="State" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="PostalCode" class="form-label small fw-semibold text-secondary">Postal / ZIP Code</label>
+                                <input asp-for="PostalCode" class="form-control" id="addrZip" placeholder="ZIP" required />
+                                <span asp-validation-for="PostalCode" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Country" class="form-label small fw-semibold text-secondary">Country</label>
+                            <input asp-for="Country" class="form-control" id="addrCountry" value="United States" required />
+                        </div>
+
+                        <input type="hidden" asp-for="Latitude" id="addrLat" />
+                        <input type="hidden" asp-for="Longitude" id="addrLon" />
+
+                        <!-- OpenStreetMap Location Interactive Pin Preview -->
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-secondary d-flex align-items-center justify-content-between">
+                                <span><i class="bi bi-geo-alt-fill text-primary me-1"></i>Interactive Location Pin (OpenStreetMap)</span>
+                                <span class="badge bg-light text-primary border extra-small">Click or drag pin to choose</span>
+                            </label>
+                            <div id="addressPreviewMap" style="height: 240px; width: 100%; border-radius: 12px; border: 1px solid #e2e8f0;"></div>
+                        </div>
+
+                        <div class="mb-4 form-check">
+                            <input asp-for="IsDefault" class="form-check-input" />
+                            <label asp-for="IsDefault" class="form-check-label small text-secondary">
+                                Set as default address for future bookings
+                            </label>
+                        </div>
+
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-pds-primary">
+                                <i class="bi bi-check-circle me-1"></i> Save Address
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        const streetInput = document.getElementById('addrStreet');
+        const resultsBox = document.getElementById('autocompleteResults');
+        let pickerApi = null;
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const initialLat = parseFloat(document.getElementById('addrLat').value) || 44.0462;
+            const initialLon = parseFloat(document.getElementById('addrLon').value) || -123.0220;
+
+            if (window.ParcelMap) {
+                pickerApi = window.ParcelMap.initPickerMap('addressPreviewMap', {
+                    lat: initialLat,
+                    lon: initialLon,
+                    label: 'Address Pin',
+                    iconType: 'pickup',
+                    onLocationSelected: function (lat, lon, addr) {
+                        document.getElementById('addrLat').value = lat;
+                        document.getElementById('addrLon').value = lon;
+                        if (addr) {
+                            if (addr.street) streetInput.value = addr.street;
+                            else if (addr.formattedAddress) streetInput.value = addr.formattedAddress;
+                            if (addr.city) document.getElementById('addrCity').value = addr.city;
+                            if (addr.state) document.getElementById('addrState').value = addr.state;
+                            if (addr.postalCode) document.getElementById('addrZip').value = addr.postalCode;
+                            if (addr.country) document.getElementById('addrCountry').value = addr.country;
+                        }
+                    }
+                });
+            }
+        });
+
+        function locateCurrentPosition() {
+            if (!window.ParcelMap) return;
+            const btn = document.getElementById('btnGpsLocate');
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Locating...';
+            btn.disabled = true;
+
+            window.ParcelMap.getCurrentLocation(
+                function (pos) {
+                    btn.innerHTML = orig;
+                    btn.disabled = false;
+                    document.getElementById('addrLat').value = pos.lat;
+                    document.getElementById('addrLon').value = pos.lon;
+
+                    if (pickerApi) {
+                        pickerApi.setLocation(pos.lat, pos.lon, 'Your Live Location');
+                    }
+
+                    window.ParcelMap.reverseGeocode(pos.lat, pos.lon, function (addr) {
+                        if (addr) {
+                            if (addr.street) streetInput.value = addr.street;
+                            else if (addr.formattedAddress) streetInput.value = addr.formattedAddress;
+                            if (addr.city) document.getElementById('addrCity').value = addr.city;
+                            if (addr.state) document.getElementById('addrState').value = addr.state;
+                            if (addr.postalCode) document.getElementById('addrZip').value = addr.postalCode;
+                            if (addr.country) document.getElementById('addrCountry').value = addr.country;
+                        }
+                    });
+                },
+                function (errMsg) {
+                    btn.innerHTML = orig;
+                    btn.disabled = false;
+                    alert(errMsg || 'Could not fetch GPS coordinates.');
+                }
+            );
+        }
+
+        streetInput.addEventListener('input', function () {
+            const query = this.value.trim();
+            if (query.length < 2) {
+                resultsBox.classList.add('d-none');
+                return;
+            }
+
+            fetch(`/api/location/autocomplete?text=${encodeURIComponent(query)}`)
+                .then(r => r.json())
+                .then(data => {
+                    resultsBox.innerHTML = '';
+                    if (data && data.length > 0) {
+                        data.forEach(item => {
+                            const btn = document.createElement('button');
+                            btn.type = 'button';
+                            btn.className = 'list-group-item list-group-item-action small text-start py-2';
+                            btn.innerHTML = `<i class="bi bi-geo-alt me-2 text-primary"></i>${item.formattedAddress}`;
+                            btn.onclick = () => {
+                                streetInput.value = item.street || item.formattedAddress;
+                                if (item.city) document.getElementById('addrCity').value = item.city;
+                                if (item.state) document.getElementById('addrState').value = item.state;
+                                if (item.postalCode) document.getElementById('addrZip').value = item.postalCode;
+                                if (item.country) document.getElementById('addrCountry').value = item.country;
+                                document.getElementById('addrLat').value = item.latitude;
+                                document.getElementById('addrLon').value = item.longitude;
+                                resultsBox.classList.add('d-none');
+                                if (pickerApi) {
+                                    pickerApi.setLocation(item.latitude, item.longitude, item.formattedAddress);
+                                }
+                            };
+                            resultsBox.appendChild(btn);
+                        });
+                        resultsBox.classList.remove('d-none');
+                    } else {
+                        resultsBox.classList.add('d-none');
+                    }
+                })
+                .catch(() => resultsBox.classList.add('d-none'));
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!resultsBox.contains(e.target) && e.target !== streetInput) {
+                resultsBox.classList.add('d-none');
+            }
+        });
+    </script>
+}

@@ -1,0 +1,43 @@
+@model ParcelDeliverySystem.Models.ErrorViewModel
+@{
+    ViewData["Title"] = Model.Title ?? "Error";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="pds-card text-center p-4 p-md-5 shadow-lg border-0" style="border-radius: 20px;">
+                <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-4" 
+                     style="width: 80px; height: 80px; background: rgba(239, 68, 68, 0.1); color: var(--danger);">
+                    <i class="bi bi-shield-exclamation fs-1"></i>
+                </div>
+
+                <div class="badge bg-danger-subtle text-danger border border-danger-subtle mb-3 px-3 py-2" style="font-size: 0.85rem; border-radius: 20px;">
+                    HTTP Status @Model.StatusCode
+                </div>
+
+                <h2 class="fw-bold mb-2">@Model.Title</h2>
+                <p class="text-secondary mb-4">
+                    @Model.Message
+                </p>
+
+                @if (Model.ShowRequestId)
+                {
+                    <div class="alert alert-light border text-start mb-4 py-2 px-3 small">
+                        <span class="text-muted fw-semibold">Diagnostic Reference:</span>
+                        <code class="ms-1 text-primary">@Model.RequestId</code>
+                    </div>
+                }
+
+                <div class="d-flex flex-wrap justify-content-center gap-3">
+                    <a asp-controller="Home" asp-action="Index" class="btn btn-pds-primary">
+                        <i class="bi bi-house-door me-1"></i> Return to Home
+                    </a>
+                    <button onclick="history.back()" class="btn btn-pds-outline">
+                        <i class="bi bi-arrow-left me-1"></i> Go Back
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

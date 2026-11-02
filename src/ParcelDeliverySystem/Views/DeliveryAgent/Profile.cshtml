@@ -1,0 +1,206 @@
+@model ParcelDeliverySystem.ViewModels.Agent.AgentProfileViewModel
+@{
+    ViewData["Title"] = "Delivery Agent Profile";
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Breadcrumbs -->
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a asp-action="Dashboard">Agent Dashboard</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Profile & Vehicle</li>
+                </ol>
+            </nav>
+
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <div>
+                    <h3 class="fw-bold mb-1">Courier Partner Profile</h3>
+                    <p class="text-muted small mb-0">Manage your contact information, registered depot address, vehicle details, and live dispatch coordinates.</p>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge @(Model.AvailabilityStatus == AgentAvailabilityStatus.Available ? "bg-success" : Model.AvailabilityStatus == AgentAvailabilityStatus.Busy ? "bg-warning text-dark" : "bg-secondary") rounded-pill px-3 py-2">
+                        Status: @Model.AvailabilityStatus
+                    </span>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <!-- Partner Card Summary -->
+                    <div class="pds-card text-center p-4 mb-4">
+                        <div class="avatar-circle mx-auto mb-3" style="width: 80px; height: 80px; font-size: 2rem; background: linear-gradient(135deg, #064e3b 0%, #047857 100%); color: white; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
+                            <i class="bi bi-truck"></i>
+                        </div>
+                        <h5 class="fw-bold mb-1">@Model.FullName</h5>
+                        <p class="text-muted small mb-2">@Model.Email</p>
+                        
+                        <div class="d-flex justify-content-center gap-1 mb-3 text-warning">
+                            @for (int i = 0; i < 5; i++)
+                            {
+                                <i class="bi bi-star-fill"></i>
+                            }
+                            <span class="ms-1 fw-bold text-dark">@Model.Rating.ToString("F1")</span>
+                        </div>
+
+                        <div class="border-top pt-3 text-start small">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">Completed Deliveries:</span>
+                                <span class="fw-bold text-success">@Model.CompletedDeliveriesCount shipments</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">Vehicle Type:</span>
+                                <span class="fw-semibold">@(Model.VehicleType ?? "Standard Courier")</span>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span class="text-muted">License Plate:</span>
+                                <span class="fw-semibold font-monospace">@(Model.VehiclePlateNumber ?? "N/A")</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Location GPS Card -->
+                    <div class="pds-card p-3">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="bi bi-geo-alt-fill text-danger"></i>
+                            <h6 class="fw-bold mb-0">GPS Coordinates</h6>
+                        </div>
+                        <p class="text-muted extra-small mb-3" style="font-size: 0.8rem;">
+                            Your coordinates are used to calculate the nearest available pickup requests in your area.
+                        </p>
+                        <button type="button" class="btn btn-outline-primary btn-sm w-100" id="btnDetectLocation">
+                            <i class="bi bi-crosshair me-1"></i> Detect Current GPS
+                        </button>
+                    </div>
+                </div>
+
+                <div class="col-lg-8">
+                    <div class="pds-card p-4">
+                        <form asp-action="Profile" method="post">
+                            @Html.AntiForgeryToken()
+                            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                            <input type="hidden" asp-for="Id" />
+                            <input type="hidden" asp-for="CompletedDeliveriesCount" />
+                            <input type="hidden" asp-for="Rating" />
+
+                            <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">
+                                <i class="bi bi-person-lines-fill text-primary me-2"></i> Contact & Base Address
+                            </h5>
+
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-6">
+                                    <label asp-for="FullName" class="form-label small fw-bold"></label>
+                                    <input asp-for="FullName" class="form-control" />
+                                    <span asp-validation-for="FullName" class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <label asp-for="Email" class="form-label small fw-bold"></label>
+                                    <input asp-for="Email" class="form-control bg-light" readonly />
+                                </div>
+                                <div class="col-md-6">
+                                    <label asp-for="PhoneNumber" class="form-label small fw-bold"></label>
+                                    <input asp-for="PhoneNumber" class="form-control" placeholder="+91 9876543210" />
+                                    <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <label asp-for="AvailabilityStatus" class="form-label small fw-bold"></label>
+                                    <select asp-for="AvailabilityStatus" class="form-select">
+                                        <option value="@AgentAvailabilityStatus.Available">🟢 Available (Accepting Requests)</option>
+                                        <option value="@AgentAvailabilityStatus.Offline">⚪ Offline (Not on Duty)</option>
+                                        @if (Model.AvailabilityStatus == AgentAvailabilityStatus.Busy)
+                                        {
+                                            <option value="@AgentAvailabilityStatus.Busy">🟡 Busy (On Active Delivery)</option>
+                                        }
+                                    </select>
+                                    <span asp-validation-for="AvailabilityStatus" class="text-danger small"></span>
+                                </div>
+                                <div class="col-12">
+                                    <label asp-for="Address" class="form-label small fw-bold"></label>
+                                    <input asp-for="Address" class="form-control" placeholder="Hub / Depot / Base Address, City, Postal Code" />
+                                    <span asp-validation-for="Address" class="text-danger small"></span>
+                                </div>
+                            </div>
+
+                            <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">
+                                <i class="bi bi-crosshair text-primary me-2"></i> Location Coordinates
+                            </h5>
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-6">
+                                    <label asp-for="CurrentLatitude" class="form-label small fw-bold"></label>
+                                    <input asp-for="CurrentLatitude" class="form-control font-monospace" id="agentLat" step="any" placeholder="e.g. 12.9716" />
+                                    <span asp-validation-for="CurrentLatitude" class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <label asp-for="CurrentLongitude" class="form-label small fw-bold"></label>
+                                    <input asp-for="CurrentLongitude" class="form-control font-monospace" id="agentLon" step="any" placeholder="e.g. 77.5946" />
+                                    <span asp-validation-for="CurrentLongitude" class="text-danger small"></span>
+                                </div>
+                            </div>
+
+                            <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">
+                                <i class="bi bi-bicycle text-primary me-2"></i> Vehicle & Certification Information
+                            </h5>
+
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-4">
+                                    <label asp-for="VehicleType" class="form-label small fw-bold"></label>
+                                    <select asp-for="VehicleType" class="form-select">
+                                        <option value="">Select vehicle type</option>
+                                        <option value="Motorcycle / Scooter">Motorcycle / Scooter</option>
+                                        <option value="Electric Cargo Bike">Electric Cargo Bike</option>
+                                        <option value="Delivery Van">Delivery Van</option>
+                                        <option value="Compact Car">Compact Car</option>
+                                        <option value="Standard Truck">Standard Truck</option>
+                                    </select>
+                                    <span asp-validation-for="VehicleType" class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-4">
+                                    <label asp-for="VehiclePlateNumber" class="form-label small fw-bold"></label>
+                                    <input asp-for="VehiclePlateNumber" class="form-control font-monospace" placeholder="e.g. KA-01-AB-1234" />
+                                    <span asp-validation-for="VehiclePlateNumber" class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-4">
+                                    <label asp-for="DrivingLicenseNumber" class="form-label small fw-bold"></label>
+                                    <input asp-for="DrivingLicenseNumber" class="form-control font-monospace" placeholder="e.g. DL-0420110012345" />
+                                    <span asp-validation-for="DrivingLicenseNumber" class="text-danger small"></span>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-end gap-2">
+                                <a asp-action="Dashboard" class="btn btn-outline-secondary">Cancel</a>
+                                <button type="submit" class="btn btn-primary px-4">
+                                    <i class="bi bi-save me-1"></i> Save Changes
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.getElementById('btnDetectLocation')?.addEventListener('click', function () {
+            if (navigator.geolocation) {
+                this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Locating...';
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        document.getElementById('agentLat').value = position.coords.latitude.toFixed(6);
+                        document.getElementById('agentLon').value = position.coords.longitude.toFixed(6);
+                        this.innerHTML = '<i class="bi bi-check2-circle text-success me-1"></i> Location Updated!';
+                    },
+                    (error) => {
+                        alert('Could not determine your GPS location: ' + error.message);
+                        this.innerHTML = '<i class="bi bi-crosshair me-1"></i> Detect Current GPS';
+                    }
+                );
+            } else {
+                alert('Geolocation is not supported by your browser.');
+            }
+        });
+    </script>
+}

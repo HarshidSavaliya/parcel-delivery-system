@@ -1,0 +1,191 @@
+@model ParcelDeliverySystem.Models.Entities.Address
+@{
+    ViewData["Title"] = "Edit Address";
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <div>
+                    <h3 class="fw-bold mb-1">Edit Address</h3>
+                    <p class="text-muted small mb-0">Update address details, GPS location pin, and contact information</p>
+                </div>
+                <a asp-action="Addresses" class="btn btn-pds-outline btn-sm">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Addresses
+                </a>
+            </div>
+
+            <div class="pds-card shadow-sm border-0" style="border-radius: 16px;">
+                <div class="pds-card-body p-4">
+                    <form asp-action="EditAddress" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="Id" />
+                        <input type="hidden" asp-for="UserId" />
+
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
+
+                        <!-- Top Quick GPS Action -->
+                        <div class="p-3 mb-4 rounded bg-light border d-flex flex-wrap align-items-center justify-content-between gap-2">
+                            <div>
+                                <strong class="small d-block text-dark"><i class="bi bi-crosshair text-primary me-1"></i> Update with Live GPS Location</strong>
+                                <span class="extra-small text-muted" style="font-size: 0.75rem;">Detect your current device GPS position and re-populate address</span>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3" id="btnGpsLocateEdit" onclick="locateCurrentPositionEdit()">
+                                <i class="bi bi-geo-alt me-1"></i> Update Location to GPS
+                            </button>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="Label" class="form-label small fw-semibold text-secondary">Address Label</label>
+                                <input asp-for="Label" class="form-control" id="editLabel" required />
+                                <span asp-validation-for="Label" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="RecipientName" class="form-label small fw-semibold text-secondary">Contact / Recipient Name</label>
+                                <input asp-for="RecipientName" class="form-control" required />
+                                <span asp-validation-for="RecipientName" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="PhoneNumber" class="form-label small fw-semibold text-secondary">Phone Number</label>
+                                <input asp-for="PhoneNumber" class="form-control" required />
+                                <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="UnitOrApt" class="form-label small fw-semibold text-secondary">Suite / Apt / Floor</label>
+                                <input asp-for="UnitOrApt" class="form-control" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="StreetAddress" class="form-label small fw-semibold text-secondary">Street Address (or adjust pin on map)</label>
+                            <input asp-for="StreetAddress" class="form-control" id="editStreet" required />
+                            <span asp-validation-for="StreetAddress" class="text-danger small"></span>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <label asp-for="City" class="form-label small fw-semibold text-secondary">City</label>
+                                <input asp-for="City" class="form-control" id="editCity" required />
+                                <span asp-validation-for="City" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="State" class="form-label small fw-semibold text-secondary">State / Province</label>
+                                <input asp-for="State" class="form-control" id="editState" required />
+                                <span asp-validation-for="State" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="PostalCode" class="form-label small fw-semibold text-secondary">Postal / ZIP Code</label>
+                                <input asp-for="PostalCode" class="form-control" id="editZip" required />
+                                <span asp-validation-for="PostalCode" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Country" class="form-label small fw-semibold text-secondary">Country</label>
+                            <input asp-for="Country" class="form-control" id="editCountry" required />
+                        </div>
+
+                        <input type="hidden" asp-for="Latitude" id="editAddrLat" />
+                        <input type="hidden" asp-for="Longitude" id="editAddrLon" />
+
+                        <!-- OpenStreetMap Location Interactive Picker -->
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-secondary d-flex align-items-center justify-content-between">
+                                <span><i class="bi bi-geo-alt-fill text-primary me-1"></i>Interactive Location Pin (OpenStreetMap)</span>
+                                <span class="badge bg-light text-primary border extra-small">Click or drag pin to update</span>
+                            </label>
+                            <div id="editAddressPreviewMap" style="height: 240px; width: 100%; border-radius: 12px; border: 1px solid #e2e8f0;"></div>
+                        </div>
+
+                        <div class="mb-4 form-check">
+                            <input asp-for="IsDefault" class="form-check-input" />
+                            <label asp-for="IsDefault" class="form-check-label small text-secondary">
+                                Default address for parcel shipments
+                            </label>
+                        </div>
+
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-pds-primary">
+                                <i class="bi bi-save me-1"></i> Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        let editPickerApi = null;
+        const streetInput = document.getElementById('editStreet');
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const lat = parseFloat(document.getElementById('editAddrLat').value) || 44.0462;
+            const lon = parseFloat(document.getElementById('editAddrLon').value) || -123.0220;
+
+            if (window.ParcelMap) {
+                editPickerApi = window.ParcelMap.initPickerMap('editAddressPreviewMap', {
+                    lat: lat,
+                    lon: lon,
+                    label: '@Model.Label: @Model.StreetAddress',
+                    iconType: 'pickup',
+                    onLocationSelected: function (newLat, newLon, addr) {
+                        document.getElementById('editAddrLat').value = newLat;
+                        document.getElementById('editAddrLon').value = newLon;
+
+                        if (addr) {
+                            if (addr.street) streetInput.value = addr.street;
+                            else if (addr.formattedAddress) streetInput.value = addr.formattedAddress;
+                            if (addr.city) document.getElementById('editCity').value = addr.city;
+                            if (addr.state) document.getElementById('editState').value = addr.state;
+                            if (addr.postalCode) document.getElementById('editZip').value = addr.postalCode;
+                            if (addr.country) document.getElementById('editCountry').value = addr.country;
+                        }
+                    }
+                });
+            }
+        });
+
+        function locateCurrentPositionEdit() {
+            if (!window.ParcelMap) return;
+            const btn = document.getElementById('btnGpsLocateEdit');
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Locating...';
+            btn.disabled = true;
+
+            window.ParcelMap.getCurrentLocation(
+                function (pos) {
+                    btn.innerHTML = orig;
+                    btn.disabled = false;
+                    document.getElementById('editAddrLat').value = pos.lat;
+                    document.getElementById('editAddrLon').value = pos.lon;
+
+                    if (editPickerApi) {
+                        editPickerApi.setLocation(pos.lat, pos.lon, 'Updated to Current Location');
+                    }
+
+                    window.ParcelMap.reverseGeocode(pos.lat, pos.lon, function (addr) {
+                        if (addr) {
+                            if (addr.street) streetInput.value = addr.street;
+                            else if (addr.formattedAddress) streetInput.value = addr.formattedAddress;
+                            if (addr.city) document.getElementById('editCity').value = addr.city;
+                            if (addr.state) document.getElementById('editState').value = addr.state;
+                            if (addr.postalCode) document.getElementById('editZip').value = addr.postalCode;
+                            if (addr.country) document.getElementById('editCountry').value = addr.country;
+                        }
+                    });
+                },
+                function (errMsg) {
+                    btn.innerHTML = orig;
+                    btn.disabled = false;
+                    alert(errMsg || 'Could not fetch GPS coordinates.');
+                }
+            );
+        }
+    </script>
+}

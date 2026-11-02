@@ -1,0 +1,312 @@
+@model ParcelDeliverySystem.ViewModels.Dashboard.AdminDashboardViewModel
+@using ParcelDeliverySystem.Models.Enums
+@{
+    ViewData["Title"] = "Super Admin Telemetry Dashboard";
+}
+
+<div class="container py-4">
+    <!-- Header Admin Banner -->
+    <div class="pds-card p-4 mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white; border-radius: 20px;">
+        <div class="row align-items-center">
+            <div class="col-md-7">
+                <div class="badge bg-warning text-dark px-3 py-1 rounded-pill mb-2 small fw-bold">
+                    <i class="bi bi-shield-lock-fill me-1"></i> Central Operations Console
+                </div>
+                <h2 class="fw-bold mb-1">System Operational Telemetry</h2>
+                <p class="mb-0 text-white-50">Real-time database records, courier fleet status, and global parcel delivery throughput.</p>
+            </div>
+            <div class="col-md-5 text-md-end mt-3 mt-md-0 d-flex flex-wrap justify-content-md-end gap-2">
+                <a asp-action="Parcels" class="btn btn-outline-light btn-sm rounded-pill px-3">
+                    <i class="bi bi-boxes me-1"></i> Shipments
+                </a>
+                <a asp-action="Reports" class="btn btn-primary btn-sm rounded-pill px-3">
+                    <i class="bi bi-graph-up-arrow me-1"></i> Operations Report
+                </a>
+                <a asp-action="CreateAgent" class="btn btn-warning btn-sm text-dark fw-bold rounded-pill px-3">
+                    <i class="bi bi-person-plus-fill me-1"></i> Provision Agent
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Telemetry Row 1: Users & Fleet -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-people-fill text-primary me-2"></i>Accounts & Fleet Telemetry</h5>
+        <a asp-action="Users" class="small text-decoration-none">Manage User Directory &rarr;</a>
+    </div>
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+            <div class="stat-card">
+                <div class="stat-icon primary">
+                    <i class="bi bi-people"></i>
+                </div>
+                <div>
+                    <div class="stat-value">@Model.TotalUsersCount</div>
+                    <div class="stat-label">Total Registered Users</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-3">
+            <div class="stat-card">
+                <div class="stat-icon accent">
+                    <i class="bi bi-person-check-fill"></i>
+                </div>
+                <div>
+                    <div class="stat-value">@Model.CustomersCount</div>
+                    <div class="stat-label">Total Customers</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-3">
+            <div class="stat-card">
+                <div class="stat-icon warning">
+                    <i class="bi bi-truck"></i>
+                </div>
+                <div>
+                    <div class="stat-value">@Model.AgentsCount</div>
+                    <div class="stat-label">Total Delivery Agents</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-3">
+            <div class="stat-card">
+                <div class="stat-icon success">
+                    <i class="bi bi-broadcast"></i>
+                </div>
+                <div>
+                    <div class="stat-value">@Model.AvailableAgentsCount</div>
+                    <div class="stat-label">Available Active Agents</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Telemetry Row 2: Shipments Pipeline (Phase 4 Required 8 Metrics) -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-boxes text-success me-2"></i>Parcel Lifecycle Breakdown</h5>
+        <a asp-action="Parcels" class="small text-decoration-none">Explore All Shipments &rarr;</a>
+    </div>
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-md-4 col-lg-2">
+            <div class="pds-card p-3 text-center border-0 shadow-sm h-100">
+                <div class="text-muted extra-small text-uppercase fw-bold mb-1">Total Parcels</div>
+                <div class="fs-4 fw-bold text-dark">@Model.TotalParcelsCount</div>
+                <span class="badge bg-light text-secondary border mt-1">Global Total</span>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-md-4 col-lg-2">
+            <div class="pds-card p-3 text-center border-0 shadow-sm h-100">
+                <div class="text-muted extra-small text-uppercase fw-bold mb-1">Pending</div>
+                <div class="fs-4 fw-bold text-warning">@Model.PendingPickupCount</div>
+                <span class="badge bg-warning-subtle text-warning border border-warning-subtle mt-1">Awaiting Pickup</span>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-md-4 col-lg-2">
+            <div class="pds-card p-3 text-center border-0 shadow-sm h-100">
+                <div class="text-muted extra-small text-uppercase fw-bold mb-1">In Transit</div>
+                <div class="fs-4 fw-bold text-primary">@Model.InTransitCount</div>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle mt-1">En Route</span>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-md-4 col-lg-2">
+            <div class="pds-card p-3 text-center border-0 shadow-sm h-100">
+                <div class="text-muted extra-small text-uppercase fw-bold mb-1">Delivered</div>
+                <div class="fs-4 fw-bold text-success">@Model.DeliveredCount</div>
+                <span class="badge bg-success-subtle text-success border border-success-subtle mt-1">Successful</span>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-md-4 col-lg-2">
+            <div class="pds-card p-3 text-center border-0 shadow-sm h-100">
+                <div class="text-muted extra-small text-uppercase fw-bold mb-1">Cancelled</div>
+                <div class="fs-4 fw-bold text-danger">@Model.CancelledCount</div>
+                <span class="badge bg-danger-subtle text-danger border border-danger-subtle mt-1">Cancelled</span>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-md-4 col-lg-2">
+            <div class="pds-card p-3 text-center border-0 shadow-sm h-100">
+                <div class="text-muted extra-small text-uppercase fw-bold mb-1">Failed Runs</div>
+                <div class="fs-4 fw-bold text-secondary">@Model.FailedDeliveriesCount</div>
+                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle mt-1">Exceptions</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Recent Users Registered -->
+        <div class="col-lg-6">
+            <div class="pds-card shadow-sm h-100 border-0" style="border-radius: 16px;">
+                <div class="pds-card-header bg-white py-3 px-4 border-bottom">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-person-lines-fill text-primary"></i>
+                            <h6 class="fw-bold mb-0">Recent User Accounts</h6>
+                        </div>
+                        <a asp-action="Users" class="btn btn-sm btn-link text-decoration-none p-0">View All</a>
+                    </div>
+                </div>
+                <div class="pds-card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 small">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>User</th>
+                                    <th>Role</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var user in Model.RecentUsers)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="fw-semibold">@user.FullName</div>
+                                            <div class="text-muted extra-small">@user.Email</div>
+                                        </td>
+                                        <td>
+                                            <span class="badge @(user.Role == UserRole.Admin ? "bg-dark" : user.Role == UserRole.DeliveryAgent ? "bg-success" : "bg-primary") rounded-pill">
+                                                @user.Role
+                                            </span>
+                                        </td>
+                                        <td>
+                                            @if (user.IsActive)
+                                            {
+                                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">Active</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill">Disabled</span>
+                                            }
+                                        </td>
+                                        <td class="text-end">
+                                            @if (user.Role == UserRole.Customer)
+                                            {
+                                                <a asp-action="CustomerDetails" asp-route-id="@user.Id" class="btn btn-sm btn-outline-primary rounded-pill py-0 px-2">View</a>
+                                            }
+                                            else if (user.Role == UserRole.DeliveryAgent)
+                                            {
+                                                <a asp-action="AgentDetails" asp-route-id="@user.Id" class="btn btn-sm btn-outline-success rounded-pill py-0 px-2">View</a>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Shipments -->
+        <div class="col-lg-6">
+            <div class="pds-card shadow-sm h-100 border-0" style="border-radius: 16px;">
+                <div class="pds-card-header bg-white py-3 px-4 border-bottom">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-box-seam-fill text-success"></i>
+                            <h6 class="fw-bold mb-0">Recent Shipments</h6>
+                        </div>
+                        <a asp-action="Parcels" class="btn btn-sm btn-link text-decoration-none p-0">View All</a>
+                    </div>
+                </div>
+                <div class="pds-card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 small">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Tracking ID</th>
+                                    <th>Destination</th>
+                                    <th>Fare</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var p in Model.RecentParcels)
+                                {
+                                    <tr>
+                                        <td>
+                                            <a asp-controller="Tracking" asp-action="Track" asp-route-trackingId="@p.TrackingId" class="fw-bold text-primary font-monospace text-decoration-none">
+                                                @p.TrackingId
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <div class="text-truncate" style="max-width: 140px;">@p.DeliveryAddress.City</div>
+                                        </td>
+                                        <td><span class="fw-semibold text-success">$@p.DeliveryCharge.ToString("F2")</span></td>
+                                        <td>
+                                            <span class="badge @(p.Status == ParcelStatus.Delivered ? "bg-success" : p.Status == ParcelStatus.Cancelled ? "bg-danger" : "bg-warning text-dark") rounded-pill">
+                                                @p.Status
+                                            </span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Operational Dispatch Map (Leaflet & OpenStreetMap) -->
+    <div class="pds-card shadow-sm border-0 mt-4 overflow-hidden" style="border-radius: 16px;">
+        <div class="pds-card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-map-fill text-primary fs-5"></i>
+                <div>
+                    <h6 class="fw-bold mb-0">Live Fleet & Active Dispatch Map</h6>
+                    <span class="text-muted extra-small">Powered by OpenStreetMap & Leaflet (Free & Open Source)</span>
+                </div>
+            </div>
+            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1">
+                <i class="bi bi-broadcast me-1"></i> Live Geo Telemetry
+            </span>
+        </div>
+        <div id="adminFleetMap" style="height: 380px; width: 100%;"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const points = [];
+            @foreach (var p in Model.RecentParcels)
+            {
+                <text>
+                if (@p.PickupLatitude && @p.PickupLongitude) {
+                    points.push({
+                        lat: @p.PickupLatitude,
+                        lon: @p.PickupLongitude,
+                        title: '📦 Pickup: @p.TrackingId',
+                        subtitle: '@p.PickupAddress.FormattedAddress.Replace("'", "\\'") (@p.Status)',
+                        type: 'pickup',
+                        link: '/Tracking/Track?trackingId=@p.TrackingId'
+                    });
+                }
+                if (@p.DeliveryLatitude && @p.DeliveryLongitude) {
+                    points.push({
+                        lat: @p.DeliveryLatitude,
+                        lon: @p.DeliveryLongitude,
+                        title: '📍 Destination: @p.TrackingId',
+                        subtitle: '@p.DeliveryAddress.FormattedAddress.Replace("'", "\\'") (@p.Status)',
+                        type: 'delivery',
+                        link: '/Tracking/Track?trackingId=@p.TrackingId'
+                    });
+                }
+                </text>
+            }
+
+            if (window.ParcelMap) {
+                window.ParcelMap.initMultiMarkerMap('adminFleetMap', points);
+            }
+        });
+    </script>
+}

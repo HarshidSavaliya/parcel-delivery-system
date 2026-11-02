@@ -1,0 +1,249 @@
+@model ParcelDeliverySystem.ViewModels.Dashboard.CustomerDashboardViewModel
+@{
+    ViewData["Title"] = "Customer Dashboard";
+}
+
+<div class="container py-4">
+    <!-- Header Welcome Banner -->
+    <div class="pds-card p-4 mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); color: white; border-radius: 20px;">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="badge bg-primary px-3 py-1 rounded-pill mb-2 small">Customer Portal</div>
+                <h2 class="fw-bold mb-1">Hello, @Model.Customer.FullName! 👋</h2>
+                <p class="mb-0 text-white-50">Manage your parcel bookings, track shipments live, and organize saved delivery addresses.</p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <a asp-action="BookParcel" class="btn btn-primary px-4 py-2 fw-semibold shadow" style="background: #4f46e5; border-radius: 12px;">
+                    <i class="bi bi-plus-circle me-1"></i> Book New Parcel
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Telemetry Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+            <div class="stat-card">
+                <div class="stat-icon primary">
+                    <i class="bi bi-box-seam"></i>
+                </div>
+                <div>
+                    <div class="stat-value">@Model.ActiveBookingsCount</div>
+                    <div class="stat-label">Active Bookings</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-3">
+            <div class="stat-card">
+                <div class="stat-icon success">
+                    <i class="bi bi-check2-all"></i>
+                </div>
+                <div>
+                    <div class="stat-value">@Model.DeliveredParcelsCount</div>
+                    <div class="stat-label">Delivered Parcels</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-3">
+            <div class="stat-card">
+                <div class="stat-icon accent">
+                    <i class="bi bi-geo-alt"></i>
+                </div>
+                <div>
+                    <div class="stat-value">@Model.SavedAddressesCount</div>
+                    <div class="stat-label">Saved Addresses</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-3">
+            <div class="stat-card">
+                <div class="stat-icon warning">
+                    <i class="bi bi-bell"></i>
+                </div>
+                <div>
+                    <div class="stat-value">@Model.UnreadNotificationsCount</div>
+                    <div class="stat-label">Unread Alerts</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Recent Parcels -->
+        <div class="col-lg-8">
+            <div class="pds-card shadow-sm h-100">
+                <div class="pds-card-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-clock-history text-primary"></i>
+                        <span>Recent Shipments</span>
+                    </div>
+                    <a asp-action="MyParcels" class="btn btn-pds-outline btn-sm">View All</a>
+                </div>
+                <div class="pds-card-body p-0">
+                    @if (Model.RecentParcels != null && Model.RecentParcels.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light small">
+                                    <tr>
+                                        <th>Tracking ID</th>
+                                        <th>Destination</th>
+                                        <th>Status</th>
+                                        <th>Date</th>
+                                        <th class="text-end">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var parcel in Model.RecentParcels)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <span class="tracking-code text-primary fw-bold">@parcel.TrackingId</span>
+                                            </td>
+                                            <td>
+                                                <div class="text-truncate" style="max-width: 200px;">
+                                                    @parcel.DeliveryAddress.FormattedAddress
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-primary-subtle text-primary rounded-pill">@parcel.Status</span>
+                                            </td>
+                                            <td class="small text-muted">@parcel.CreatedAt.ToString("MMM dd, yyyy")</td>
+                                            <td class="text-end">
+                                                <a asp-controller="Home" asp-action="Track" asp-route-trackingId="@parcel.TrackingId" class="btn btn-sm btn-outline-secondary rounded-pill">
+                                                    Track
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center p-5">
+                            <div class="stat-icon primary mx-auto mb-3" style="width: 50px; height: 50px;">
+                                <i class="bi bi-box2"></i>
+                            </div>
+                            <h6 class="fw-bold">No Shipments Yet</h6>
+                            <p class="text-muted small mb-3">You haven't booked any deliveries yet. Get started today!</p>
+                            <a asp-action="BookParcel" class="btn btn-pds-primary btn-sm">
+                                <i class="bi bi-plus-circle me-1"></i> Book Your First Parcel
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Saved Addresses & Quick Profile -->
+        <div class="col-lg-4">
+            <div class="pds-card shadow-sm mb-4">
+                <div class="pds-card-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-pin-map text-success"></i>
+                        <span>Saved Addresses</span>
+                    </div>
+                    <a asp-action="Addresses" class="btn btn-link btn-sm text-decoration-none p-0">Manage</a>
+                </div>
+                <div class="pds-card-body p-3">
+                    @if (Model.SavedAddresses != null && Model.SavedAddresses.Any())
+                    {
+                        @foreach (var addr in Model.SavedAddresses.Take(3))
+                        {
+                            <div class="p-2 mb-2 rounded bg-light border">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="fw-bold small">@addr.Label</span>
+                                    @if (addr.IsDefault)
+                                    {
+                                        <span class="badge bg-success small py-0 px-2">Default</span>
+                                    }
+                                </div>
+                                <div class="small text-secondary text-truncate">@addr.FormattedAddress</div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-muted small text-center py-3">No saved addresses found.</div>
+                    }
+                </div>
+            </div>
+
+            <!-- Notifications Feed -->
+            <div class="pds-card shadow-sm">
+                <div class="pds-card-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-bell text-warning"></i>
+                        <span>Recent Notifications</span>
+                    </div>
+                    <a asp-action="Notifications" class="btn btn-link btn-sm text-decoration-none p-0">All</a>
+                </div>
+                <div class="pds-card-body p-3">
+                    @if (Model.RecentNotifications != null && Model.RecentNotifications.Any())
+                    {
+                        @foreach (var notif in Model.RecentNotifications.Take(3))
+                        {
+                            <div class="d-flex gap-2 mb-2 pb-2 border-bottom last-border-none">
+                                <div class="status-dot available mt-2"></div>
+                                <div>
+                                    <div class="fw-bold small">@notif.Title</div>
+                                    <div class="text-secondary small">@notif.Message</div>
+                                    <div class="text-muted extra-small" style="font-size: 0.75rem;">@notif.CreatedAt.ToString("MMM dd, hh:mm tt")</div>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-muted small text-center py-3">No notifications to display.</div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.RecentParcels != null && Model.RecentParcels.Any())
+    {
+        var activeParcel = Model.RecentParcels.FirstOrDefault(p => p.Status != ParcelStatus.Delivered && p.Status != ParcelStatus.Cancelled) ?? Model.RecentParcels.First();
+        <div class="pds-card shadow-sm border-0 mt-4 overflow-hidden" style="border-radius: 16px;">
+            <div class="pds-card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-map-fill text-primary fs-5"></i>
+                    <div>
+                        <h6 class="fw-bold mb-0">Live Transit Route Map: <span class="font-monospace text-primary">@activeParcel.TrackingId</span></h6>
+                        <span class="text-muted extra-small">OpenStreetMap & Leaflet Interactive Telemetry</span>
+                    </div>
+                </div>
+                <a asp-controller="Tracking" asp-action="Track" asp-route-trackingId="@activeParcel.TrackingId" class="btn btn-primary btn-sm rounded-pill px-3">
+                    <i class="bi bi-broadcast me-1"></i> Live Full Tracking
+                </a>
+            </div>
+            <div id="customerDashboardMap" style="height: 320px; width: 100%;"></div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    @if (Model.RecentParcels != null && Model.RecentParcels.Any())
+    {
+        var activeParcel = Model.RecentParcels.FirstOrDefault(p => p.Status != ParcelStatus.Delivered && p.Status != ParcelStatus.Cancelled) ?? Model.RecentParcels.First();
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const pLat = parseFloat('@activeParcel.PickupLatitude') || 0;
+                const pLon = parseFloat('@activeParcel.PickupLongitude') || 0;
+                const dLat = parseFloat('@activeParcel.DeliveryLatitude') || 0;
+                const dLon = parseFloat('@activeParcel.DeliveryLongitude') || 0;
+                const routeGeoJsonStr = @Html.Raw(Json.Serialize(activeParcel.RouteGeometryJson));
+
+                if (window.ParcelMap) {
+                    window.ParcelMap.initRouteMap('customerDashboardMap', pLat, pLon, dLat, dLon, routeGeoJsonStr);
+                }
+            });
+        </script>
+    }
+}

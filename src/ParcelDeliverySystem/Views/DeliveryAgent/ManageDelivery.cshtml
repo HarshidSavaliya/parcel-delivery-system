@@ -1,0 +1,378 @@
+@model ParcelDeliverySystem.ViewModels.Agent.AgentDeliveryManagementViewModel
+@using ParcelDeliverySystem.Models.Enums
+@{
+    ViewData["Title"] = $"Manage Delivery - {Model.Parcel.TrackingId}";
+    var p = Model.Parcel;
+}
+
+<div class="container py-4">
+    <!-- Breadcrumb & Status Header -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Dashboard">Agent Dashboard</a></li>
+            <li class="breadcrumb-item"><a asp-action="MyDeliveries">My Deliveries</a></li>
+            <li class="breadcrumb-item active font-monospace" aria-current="page">@p.TrackingId</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <h3 class="fw-bold mb-0">Shipment @p.TrackingId</h3>
+                <span class="badge @(p.Status switch {
+                    ParcelStatus.Booked => "bg-info-subtle text-info border border-info-subtle",
+                    ParcelStatus.PendingPickup => "bg-warning-subtle text-warning border border-warning-subtle",
+                    ParcelStatus.AgentAssigned => "bg-primary-subtle text-primary border border-primary-subtle",
+                    ParcelStatus.PickedUp => "bg-primary text-white",
+                    ParcelStatus.InTransit => "bg-primary text-white",
+                    ParcelStatus.OutForDelivery => "bg-warning text-dark fw-bold",
+                    ParcelStatus.Delivered => "bg-success text-white fw-bold",
+                    ParcelStatus.Cancelled => "bg-danger-subtle text-danger border border-danger-subtle",
+                    _ => "bg-secondary"
+                }) rounded-pill px-3 py-2">
+                    Current Status: @p.Status
+                </span>
+            </div>
+            <p class="text-muted small mb-0 mt-1">Booked on @p.BookingDate.ToString("MMMM dd, yyyy hh:mm tt") &bull; @p.DeliveryType Delivery &bull; Payout: <strong>$@p.DeliveryCharge.ToString("F2")</strong></p>
+        </div>
+
+        <div class="d-flex gap-2">
+            <a asp-controller="Tracking" asp-action="Track" asp-route-trackingId="@p.TrackingId" target="_blank" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-box-arrow-up-right me-1"></i> Public Tracking
+            </a>
+            <a asp-action="MyDeliveries" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i> Back to List
+            </a>
+        </div>
+    </div>
+
+    <!-- Active Status Progression Action Banner -->
+    @if (!Model.IsCompleted && !Model.IsFailed && !Model.IsCancelled)
+    {
+        <div class="pds-card p-4 mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white; border-radius: 16px;">
+            <div class="row align-items-center">
+                <div class="col-md-7">
+                    <span class="badge bg-primary px-3 py-1 rounded-pill mb-2 small text-uppercase fw-bold">Next Action Required</span>
+                    <h4 class="fw-bold mb-1">
+                        @if (Model.CanMarkPickedUp)
+                        {
+                            <span>Proceed to Pickup Location 📦</span>
+                        }
+                        else if (Model.CanMarkInTransit)
+                        {
+                            <span>Begin Transport / Hub Transit 🚚</span>
+                        }
+                        else if (Model.CanMarkOutForDelivery)
+                        {
+                            <span>Dispatch for Final Drop-off 🛵</span>
+                        }
+                        else if (Model.CanMarkDelivered)
+                        {
+                            <span>Complete Drop-off with Recipient 🎉</span>
+                        }
+                    </h4>
+                    <p class="text-white-50 small mb-0">Follow the delivery lifecycle state machine sequentially to notify the sender and receiver.</p>
+                </div>
+                <div class="col-md-5 text-md-end mt-3 mt-md-0 d-flex flex-wrap justify-content-md-end gap-2">
+                    @if (Model.CanMarkPickedUp)
+                    {
+                        <form asp-action="MarkPickedUp" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="parcelId" value="@p.Id" />
+                            <button type="submit" class="btn btn-success fw-bold px-4 py-2" onclick="return confirm('Confirm that you have picked up parcel @p.TrackingId from sender?');">
+                                <i class="bi bi-box-seam me-1"></i> Mark as Picked Up
+                            </button>
+                        </form>
+                    }
+                    else if (Model.CanMarkInTransit)
+                    {
+                        <form asp-action="MarkInTransit" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="parcelId" value="@p.Id" />
+                            <button type="submit" class="btn btn-primary fw-bold px-4 py-2">
+                                <i class="bi bi-truck me-1"></i> Mark as In Transit
+                            </button>
+                        </form>
+                    }
+                    else if (Model.CanMarkOutForDelivery)
+                    {
+                        <form asp-action="MarkOutForDelivery" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="parcelId" value="@p.Id" />
+                            <button type="submit" class="btn btn-warning fw-bold text-dark px-4 py-2">
+                                <i class="bi bi-geo-alt-fill me-1"></i> Mark Out For Delivery
+                            </button>
+                        </form>
+                    }
+
+                    @if (Model.CanMarkDelivered)
+                    {
+                        <button type="button" class="btn btn-success fw-bold px-4 py-2" data-bs-toggle="modal" data-bs-target="#confirmDeliveryModal">
+                            <i class="bi bi-check2-circle me-1"></i> Complete Delivery
+                        </button>
+                    }
+
+                    @if (Model.CanMarkFailed)
+                    {
+                        <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#reportFailureModal">
+                            <i class="bi bi-x-circle me-1"></i> Report Failure
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="row g-4">
+        <!-- Left: Map & Addresses -->
+        <div class="col-lg-8">
+            <!-- Map Card -->
+            <div class="pds-card shadow-sm mb-4 border-0" style="border-radius: 16px;">
+                <div class="pds-card-header bg-white py-3 px-4 border-bottom">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-map-fill text-primary"></i>
+                            <h5 class="fw-bold mb-0">Delivery Route Navigation</h5>
+                        </div>
+                        <div class="small text-muted">
+                            Distance: <strong class="text-dark">@p.Distance.ToString("F1") km</strong> &bull; ETA: <strong class="text-primary">@p.EstimatedDurationMinutes mins</strong>
+                        </div>
+                    </div>
+                </div>
+                <div class="pds-card-body p-0">
+                    <div id="agentRouteMap" style="height: 380px; width: 100%; border-radius: 0 0 16px 16px;"></div>
+                </div>
+            </div>
+
+            <!-- Address Cards -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <div class="pds-card p-4 h-100 border-0 shadow-sm" style="border-left: 4px solid var(--primary) !important;">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="avatar-circle" style="width: 32px; height: 32px; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
+                                <i class="bi bi-box-arrow-up"></i>
+                            </span>
+                            <h6 class="fw-bold mb-0">Pickup Point</h6>
+                        </div>
+                        <p class="fw-semibold small mb-1">@p.PickupAddress.FormattedAddress</p>
+                        <div class="small text-muted mb-2">
+                            Contact: <strong>@p.PickupAddress.RecipientName</strong>
+                        </div>
+                        <a href="tel:@p.PickupAddress.PhoneNumber" class="btn btn-outline-primary btn-sm rounded-pill">
+                            <i class="bi bi-telephone-fill me-1"></i> Call Sender (@p.PickupAddress.PhoneNumber)
+                        </a>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="pds-card p-4 h-100 border-0 shadow-sm" style="border-left: 4px solid #16a34a !important;">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="avatar-circle" style="width: 32px; height: 32px; background: #dcfce7; color: #16a34a; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
+                                <i class="bi bi-geo-alt-fill"></i>
+                            </span>
+                            <h6 class="fw-bold mb-0">Drop-off Destination</h6>
+                        </div>
+                        <p class="fw-semibold small mb-1">@p.DeliveryAddress.FormattedAddress</p>
+                        <div class="small text-muted mb-2">
+                            Recipient: <strong>@p.DeliveryAddress.RecipientName</strong>
+                        </div>
+                        <a href="tel:@p.DeliveryAddress.PhoneNumber" class="btn btn-outline-success btn-sm rounded-pill">
+                            <i class="bi bi-telephone-fill me-1"></i> Call Recipient (@p.DeliveryAddress.PhoneNumber)
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Timeline -->
+            <div class="pds-card p-4 shadow-sm border-0" style="border-radius: 16px;">
+                <h5 class="fw-bold mb-3"><i class="bi bi-clock-history me-2 text-primary"></i> Shipment Audit Trail</h5>
+                <div class="timeline">
+                    @if (p.StatusHistory != null && p.StatusHistory.Any())
+                    {
+                        @foreach (var entry in p.StatusHistory.OrderByDescending(h => h.Timestamp))
+                        {
+                            <div class="d-flex gap-3 mb-3 pb-3 border-bottom last-border-none">
+                                <div class="mt-1">
+                                    <span class="badge bg-primary-subtle text-primary rounded-circle p-2">
+                                        <i class="bi bi-check-circle"></i>
+                                    </span>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h6 class="fw-bold mb-0">@entry.Status</h6>
+                                        <span class="extra-small text-muted">@entry.Timestamp.ToString("MMM dd, hh:mm tt")</span>
+                                    </div>
+                                    <div class="small text-secondary">@entry.Notes</div>
+                                    @if (!string.IsNullOrEmpty(entry.Location))
+                                    {
+                                        <div class="extra-small text-muted"><i class="bi bi-geo-alt me-1"></i>@entry.Location</div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Parcel Specs & Actions -->
+        <div class="col-lg-4">
+            <div class="pds-card p-4 mb-4 shadow-sm border-0" style="border-radius: 16px;">
+                <h6 class="fw-bold text-dark border-bottom pb-2 mb-3">Package Telemetry</h6>
+                <div class="d-flex justify-content-between py-2 border-bottom">
+                    <span class="text-muted small">Package Type:</span>
+                    <span class="fw-semibold small">@p.ParcelType</span>
+                </div>
+                <div class="d-flex justify-content-between py-2 border-bottom">
+                    <span class="text-muted small">Physical Weight:</span>
+                    <span class="fw-semibold small">@p.Weight.ToString("F1") kg</span>
+                </div>
+                <div class="d-flex justify-content-between py-2 border-bottom">
+                    <span class="text-muted small">Dimensions (L×W×H):</span>
+                    <span class="fw-semibold small">@p.Length × @p.Width × @p.Height cm</span>
+                </div>
+                <div class="d-flex justify-content-between py-2 border-bottom">
+                    <span class="text-muted small">Delivery Tier:</span>
+                    <span class="badge bg-light text-dark border">@p.DeliveryType</span>
+                </div>
+                <div class="d-flex justify-content-between py-2 border-bottom">
+                    <span class="text-muted small">Delivery Fare:</span>
+                    <span class="fw-bold text-success fs-5">$@p.DeliveryCharge.ToString("F2")</span>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(p.SpecialInstructions))
+                {
+                    <div class="mt-3">
+                        <span class="extra-small text-muted text-uppercase fw-bold">Handling Notes:</span>
+                        <p class="small bg-light p-2 rounded border mb-0">@p.SpecialInstructions</p>
+                    </div>
+                }
+            </div>
+
+            @if (Model.CurrentAssignment != null)
+            {
+                <div class="pds-card p-4 shadow-sm border-0" style="border-radius: 16px;">
+                    <h6 class="fw-bold text-dark border-bottom pb-2 mb-3">Assignment Details</h6>
+                    <div class="small mb-2">
+                        <span class="text-muted">Assigned At:</span>
+                        <div class="fw-semibold">@Model.CurrentAssignment.AssignedAt.ToString("MMM dd, yyyy hh:mm tt")</div>
+                    </div>
+                    @if (Model.CurrentAssignment.PickupTime.HasValue)
+                    {
+                        <div class="small mb-2">
+                            <span class="text-muted">Pickup Timestamp:</span>
+                            <div class="fw-semibold">@Model.CurrentAssignment.PickupTime.Value.ToString("MMM dd, yyyy hh:mm tt")</div>
+                        </div>
+                    }
+                    @if (Model.CurrentAssignment.DeliveryTime.HasValue)
+                    {
+                        <div class="small mb-2">
+                            <span class="text-muted">Delivered Timestamp:</span>
+                            <div class="fw-semibold text-success">@Model.CurrentAssignment.DeliveryTime.Value.ToString("MMM dd, yyyy hh:mm tt")</div>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.CurrentAssignment.DeliveredTo))
+                    {
+                        <div class="small mb-2">
+                            <span class="text-muted">Received By:</span>
+                            <div class="fw-bold">@Model.CurrentAssignment.DeliveredTo</div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Confirm Delivery -->
+<div class="modal fade" id="confirmDeliveryModal" tabindex="-1" aria-labelledby="confirmDeliveryModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content" style="border-radius: 16px;">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="confirmDeliveryModalLabel">
+                    <i class="bi bi-check2-circle text-success me-2"></i> Confirm Parcel Drop-off
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-action="ConfirmDelivery" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="ParcelId" value="@p.Id" />
+                <input type="hidden" name="TrackingId" value="@p.TrackingId" />
+                
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Received By (Recipient or Representative Name) <span class="text-danger">*</span></label>
+                        <input type="text" name="ReceivedBy" class="form-control" value="@p.RecipientName" required placeholder="e.g. John Doe / Security Desk" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Delivery Proof / Confirmation Notes</label>
+                        <textarea name="DeliveryNotes" class="form-control" rows="3" placeholder="e.g. Handed directly to recipient at doorstep. Signature verified."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success fw-bold px-4">
+                        <i class="bi bi-check-lg me-1"></i> Submit Proof & Complete
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Report Failure -->
+<div class="modal fade" id="reportFailureModal" tabindex="-1" aria-labelledby="reportFailureModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content" style="border-radius: 16px;">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold text-danger" id="reportFailureModalLabel">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i> Report Delivery Exception
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-action="ReportDeliveryFailure" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="ParcelId" value="@p.Id" />
+                <input type="hidden" name="TrackingId" value="@p.TrackingId" />
+                
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Failure Reason <span class="text-danger">*</span></label>
+                        <select name="Reason" class="form-select" required>
+                            <option value="Customer unavailable">Customer unavailable (Door locked / Unreachable phone)</option>
+                            <option value="Incorrect address">Incorrect or incomplete address coordinates</option>
+                            <option value="Customer refused">Customer refused package acceptance</option>
+                            <option value="Damaged parcel">Packaging damaged in transit</option>
+                            <option value="Other">Other operational reason</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Detailed Explanation <span class="text-danger">*</span></label>
+                        <textarea name="Notes" class="form-control" rows="3" required placeholder="Describe what occurred during the delivery attempt..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger fw-bold px-4">
+                        <i class="bi bi-exclamation-octagon me-1"></i> Submit Failure Report
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const pickupLat = parseFloat('@p.PickupLatitude') || 0;
+            const pickupLon = parseFloat('@p.PickupLongitude') || 0;
+            const deliveryLat = parseFloat('@p.DeliveryLatitude') || 0;
+            const deliveryLon = parseFloat('@p.DeliveryLongitude') || 0;
+            const routeGeoJsonStr = @Html.Raw(Json.Serialize(p.RouteGeometryJson));
+
+            if (window.ParcelMap) {
+                window.ParcelMap.initRouteMap('agentRouteMap', pickupLat, pickupLon, deliveryLat, deliveryLon, routeGeoJsonStr);
+            }
+        });
+    </script>
+}

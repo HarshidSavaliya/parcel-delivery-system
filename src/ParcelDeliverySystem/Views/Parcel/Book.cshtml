@@ -1,0 +1,1008 @@
+@model ParcelDeliverySystem.ViewModels.Parcels.BookParcelViewModel
+@{
+    ViewData["Title"] = "Book a Parcel";
+}
+
+<div class="container py-4">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <div class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill mb-1 small fw-semibold">
+                <i class="bi bi-box-seam me-1"></i> Fast Dispatch Engine
+            </div>
+            <h2 class="fw-bold mb-0">Book a Parcel Delivery</h2>
+        </div>
+        <a asp-action="MyParcels" class="btn btn-pds-outline btn-sm">
+            <i class="bi bi-clock-history me-1"></i> My Booked Parcels
+        </a>
+    </div>
+
+    <form asp-action="Book" method="post" id="bookingForm">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small mb-4"></div>
+
+        <div class="row g-4">
+            <!-- Left Column: Form Inputs -->
+            <div class="col-lg-7">
+                
+                <!-- Section 1: Pickup Address -->
+                <div class="pds-card shadow-sm border-0 mb-4" style="border-radius: 16px;">
+                    <div class="pds-card-header bg-light d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-primary rounded-circle p-2" style="width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center;">1</span>
+                            <span class="fw-bold">Pickup Location</span>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm" onclick="openMapPicker('pickup')">
+                                <i class="bi bi-map-fill me-1"></i> Pick from Map
+                            </button>
+                            <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3" onclick="useCurrentLocationForPickup()">
+                                <i class="bi bi-crosshair me-1"></i> Live GPS
+                            </button>
+                        </div>
+                    </div>
+                    <div class="pds-card-body p-4">
+                        @if (Model.SavedAddresses != null && Model.SavedAddresses.Any())
+                        {
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold text-secondary">Choose Pickup Source</label>
+                                <div class="d-flex gap-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" asp-for="PickupMode" value="saved" id="pickupModeSaved" checked onchange="togglePickupMode()" />
+                                        <label class="form-check-label small" for="pickupModeSaved">Saved Address</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" asp-for="PickupMode" value="new" id="pickupModeNew" onchange="togglePickupMode()" />
+                                        <label class="form-check-label small" for="pickupModeNew">Enter New Pickup / Select on Map</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="savedPickupContainer" class="mb-3 @(Model.PickupMode == "new" ? "d-none" : "")">
+                                <label asp-for="SelectedPickupAddressId" class="form-label small fw-semibold text-secondary">Select Saved Address</label>
+                                <select asp-for="SelectedPickupAddressId" class="form-select" id="savedPickupSelect" onchange="onSavedPickupChanged()">
+                                    @foreach (var addr in Model.SavedAddresses)
+                                    {
+                                        <option value="@addr.Id" 
+                                                data-lat="@addr.Latitude" 
+                                                data-lon="@addr.Longitude" 
+                                                data-formatted="@addr.FormattedAddress"
+                                                data-name="@addr.RecipientName"
+                                                data-phone="@addr.PhoneNumber">
+                                            @addr.Label: @addr.FormattedAddress @(addr.IsDefault ? "(Default)" : "")
+                                        </option>
+                                    }
+                                </select>
+                            </div>
+                        }
+                        else
+                        {
+                            <input type="hidden" asp-for="PickupMode" value="new" />
+                        }
+
+                        <div id="newPickupContainer" class="@(Model.PickupMode == "saved" && Model.SavedAddresses != null && Model.SavedAddresses.Any() ? "d-none" : "")">
+                            <div class="row g-2 mb-3">
+                                <div class="col-md-6">
+                                    <label asp-for="NewPickupSenderName" class="form-label small fw-semibold text-secondary">Sender Name</label>
+                                    <input asp-for="NewPickupSenderName" class="form-control" id="pickupSenderName" placeholder="e.g. John Doe" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label asp-for="NewPickupPhone" class="form-label small fw-semibold text-secondary">Sender Phone</label>
+                                    <input asp-for="NewPickupPhone" class="form-control" id="pickupPhone" placeholder="+1 (555) 000-0000" />
+                                </div>
+                            </div>
+
+                            <div class="mb-3 position-relative">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label asp-for="NewPickupStreet" class="form-label small fw-semibold text-secondary mb-0">
+                                        Pickup Address (Select from map or type manually)
+                                    </label>
+                                </div>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-geo-alt text-primary"></i></span>
+                                    <input asp-for="NewPickupStreet" class="form-control border-start-0" id="pickupStreet" placeholder="Type address or click 'Pick from Map'..." autocomplete="off" />
+                                    <button class="btn btn-outline-primary" type="button" onclick="openMapPicker('pickup')">
+                                        <i class="bi bi-map-fill me-1"></i> Pick from Map
+                                    </button>
+                                </div>
+                                <div id="pickupAutocompleteResults" class="list-group position-absolute w-100 shadow-lg mt-1 d-none" style="z-index: 1050; max-height: 180px; overflow-y: auto;"></div>
+                            </div>
+
+                            <div class="row g-2 mb-3">
+                                <div class="col-md-4">
+                                    <input asp-for="NewPickupCity" class="form-control form-control-sm" id="pickupCity" placeholder="City" />
+                                </div>
+                                <div class="col-md-4">
+                                    <input asp-for="NewPickupState" class="form-control form-control-sm" id="pickupState" placeholder="State" />
+                                </div>
+                                <div class="col-md-4">
+                                    <input asp-for="NewPickupPostalCode" class="form-control form-control-sm" id="pickupZip" placeholder="ZIP" />
+                                </div>
+                            </div>
+                            <input type="hidden" asp-for="NewPickupLatitude" id="pickupLat" />
+                            <input type="hidden" asp-for="NewPickupLongitude" id="pickupLon" />
+
+                            <div class="form-check small">
+                                <input asp-for="SaveNewPickupToAddressBook" class="form-check-input" />
+                                <label asp-for="SaveNewPickupToAddressBook" class="form-check-label text-secondary">Save this address for future bookings</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Delivery Destination -->
+                <div class="pds-card shadow-sm border-0 mb-4" style="border-radius: 16px;">
+                    <div class="pds-card-header bg-light d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-success rounded-circle p-2" style="width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center;">2</span>
+                            <span class="fw-bold">Delivery Destination</span>
+                        </div>
+                    </div>
+                    <div class="pds-card-body p-4">
+                        
+                        <!-- Quick Location Actions Bar -->
+                        <div class="p-3 mb-4 rounded-3 border bg-light d-flex flex-wrap align-items-center justify-content-between gap-2">
+                            <div>
+                                <strong class="text-dark small d-block"><i class="bi bi-pin-map-fill text-success me-1"></i> Set Delivery Location on Map</strong>
+                                <span class="text-muted extra-small" style="font-size: 0.75rem;">Click 'Pick from Map' to drop a pin without typing manually</span>
+                            </div>
+                            <div>
+                                <button type="button" class="btn btn-success btn-sm rounded-pill px-3 text-white shadow-sm" onclick="openMapPicker('delivery')">
+                                    <i class="bi bi-map-fill me-1"></i> 🗺️ Pick from Map
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="RecipientName" class="form-label small fw-semibold text-secondary">Recipient Full Name</label>
+                                <input asp-for="RecipientName" class="form-control" id="recipientName" placeholder="e.g. Sarah Connor" required />
+                                <span asp-validation-for="RecipientName" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="RecipientPhone" class="form-label small fw-semibold text-secondary">Recipient Phone Number</label>
+                                <input asp-for="RecipientPhone" class="form-control" id="recipientPhone" placeholder="+1 (555) 123-4567" required />
+                                <span asp-validation-for="RecipientPhone" class="text-danger small"></span>
+                            </div>
+                            <div class="col-12">
+                                <label asp-for="RecipientEmail" class="form-label small fw-semibold text-secondary">Recipient Email (For delivery tracking alerts)</label>
+                                <input asp-for="RecipientEmail" class="form-control" placeholder="recipient@example.com" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3 position-relative">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label asp-for="NewDeliveryStreet" class="form-label small fw-semibold text-secondary mb-0">
+                                    Delivery Destination Address (Select from map or type manually)
+                                </label>
+                            </div>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i class="bi bi-pin-map text-success"></i></span>
+                                <input asp-for="NewDeliveryStreet" class="form-control border-start-0" id="deliveryStreet" placeholder="Type destination address or click 'Pick from Map'..." autocomplete="off" required />
+                                <button class="btn btn-outline-success" type="button" onclick="openMapPicker('delivery')">
+                                    <i class="bi bi-map-fill me-1"></i> Pick from Map
+                                </button>
+                            </div>
+                            <div id="deliveryAutocompleteResults" class="list-group position-absolute w-100 shadow-lg mt-1 d-none" style="z-index: 1050; max-height: 180px; overflow-y: auto;"></div>
+                            <span asp-validation-for="NewDeliveryStreet" class="text-danger small"></span>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-4">
+                                <input asp-for="NewDeliveryCity" class="form-control form-control-sm" id="deliveryCity" placeholder="City" required />
+                            </div>
+                            <div class="col-md-4">
+                                <input asp-for="NewDeliveryState" class="form-control form-control-sm" id="deliveryState" placeholder="State" required />
+                            </div>
+                            <div class="col-md-4">
+                                <input asp-for="NewDeliveryPostalCode" class="form-control form-control-sm" id="deliveryZip" placeholder="ZIP" required />
+                            </div>
+                        </div>
+                        <input type="hidden" asp-for="NewDeliveryLatitude" id="deliveryLat" />
+                        <input type="hidden" asp-for="NewDeliveryLongitude" id="deliveryLon" />
+
+                        <div class="form-check small">
+                            <input asp-for="SaveNewDeliveryToAddressBook" class="form-check-input" />
+                            <label asp-for="SaveNewDeliveryToAddressBook" class="form-check-label text-secondary">Save recipient to address book</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Parcel Specs & Delivery Type -->
+                <div class="pds-card shadow-sm border-0 mb-4" style="border-radius: 16px;">
+                    <div class="pds-card-header bg-light">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-warning text-dark rounded-circle p-2" style="width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center;">3</span>
+                            <span class="fw-bold">Package Specifications & Delivery Speed</span>
+                        </div>
+                    </div>
+                    <div class="pds-card-body p-4">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="ParcelType" class="form-label small fw-semibold text-secondary">Package Category</label>
+                                <select asp-for="ParcelType" class="form-select" id="parcelTypeSelect" onchange="triggerQuoteCalculation()">
+                                    <option value="Document / Envelope">📄 Documents / Envelope</option>
+                                    <option value="Small Box (up to 2 kg)" selected>📦 Small Box (up to 2 kg)</option>
+                                    <option value="Medium Box (up to 10 kg)">📦 Medium Box (up to 10 kg)</option>
+                                    <option value="Large Package (up to 30 kg)">📦 Large Package (up to 30 kg)</option>
+                                    <option value="Fragile / Electronics">⚠️ Fragile / Electronics</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Weight" class="form-label small fw-semibold text-secondary">Actual Weight (kg)</label>
+                                <div class="input-group">
+                                    <input asp-for="Weight" type="number" step="0.1" min="0.1" max="500" class="form-control" id="parcelWeight" oninput="triggerQuoteCalculation()" required />
+                                    <span class="input-group-text bg-light text-muted">kg</span>
+                                </div>
+                                <span asp-validation-for="Weight" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-4">
+                                <label class="form-label extra-small text-muted mb-1" style="font-size: 0.75rem;">Length (cm)</label>
+                                <input asp-for="Length" type="number" step="1" min="1" max="300" class="form-control form-control-sm" id="parcelLength" oninput="triggerQuoteCalculation()" required />
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label extra-small text-muted mb-1" style="font-size: 0.75rem;">Width (cm)</label>
+                                <input asp-for="Width" type="number" step="1" min="1" max="300" class="form-control form-control-sm" id="parcelWidth" oninput="triggerQuoteCalculation()" required />
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label extra-small text-muted mb-1" style="font-size: 0.75rem;">Height (cm)</label>
+                                <input asp-for="Height" type="number" step="1" min="1" max="300" class="form-control form-control-sm" id="parcelHeight" oninput="triggerQuoteCalculation()" required />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-secondary">Delivery Service Tier</label>
+                            <div class="row g-2">
+                                <div class="col-md-4">
+                                    <label class="p-3 border rounded text-center w-100 cursor-pointer service-tier-card" id="tierStandardCard">
+                                        <input type="radio" asp-for="DeliveryType" value="@DeliveryType.Standard" class="d-none" onchange="onTierChanged()" checked />
+                                        <div class="fw-bold text-dark">Standard</div>
+                                        <div class="text-muted extra-small" style="font-size: 0.75rem;">2-3 Business Days</div>
+                                        <div class="badge bg-light text-dark border mt-1">1.0x Rate</div>
+                                    </label>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="p-3 border rounded text-center w-100 cursor-pointer service-tier-card" id="tierExpressCard">
+                                        <input type="radio" asp-for="DeliveryType" value="@DeliveryType.Express" class="d-none" onchange="onTierChanged()" />
+                                        <div class="fw-bold text-primary">Express</div>
+                                        <div class="text-muted extra-small" style="font-size: 0.75rem;">Next Day Priority</div>
+                                        <div class="badge bg-primary-subtle text-primary border border-primary-subtle mt-1">1.6x Rate</div>
+                                    </label>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="p-3 border rounded text-center w-100 cursor-pointer service-tier-card" id="tierSameDayCard">
+                                        <input type="radio" asp-for="DeliveryType" value="@DeliveryType.SameDay" class="d-none" onchange="onTierChanged()" />
+                                        <div class="fw-bold text-success">Same-Day</div>
+                                        <div class="text-muted extra-small" style="font-size: 0.75rem;">Rush Hours</div>
+                                        <div class="badge bg-success-subtle text-success border border-success-subtle mt-1">2.2x Rate</div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-2">
+                            <label asp-for="SpecialInstructions" class="form-label small fw-semibold text-secondary">Special Delivery Instructions (Optional)</label>
+                            <textarea asp-for="SpecialInstructions" class="form-control" rows="2" placeholder="e.g. Leave by front door, ring bell, gate code #4921"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Column: Interactive Live Quote Summary & Leaflet Map -->
+            <div class="col-lg-5">
+                <div class="sticky-top" style="top: 80px; z-index: 1020;">
+                    
+                    <!-- Live Map Preview Card -->
+                    <div class="pds-card shadow-sm border-0 mb-4" style="border-radius: 16px;">
+                        <div class="pds-card-header bg-light d-flex flex-wrap align-items-center justify-content-between gap-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-map-fill text-primary"></i>
+                                <span class="fw-bold">Interactive Route Map</span>
+                            </div>
+                            <span id="routeStatusBadge" class="badge bg-secondary-subtle text-secondary small">Ready</span>
+                        </div>
+                        
+                        <!-- Map Pin Mode Switcher -->
+                        <div class="px-3 py-2 bg-light border-bottom d-flex align-items-center justify-content-between">
+                            <div class="btn-group btn-group-sm w-100" role="group">
+                                <button type="button" class="btn btn-outline-primary active" id="btnPinPickup" onclick="selectMapMode('pickup')">
+                                    <i class="bi bi-box-seam me-1"></i> Click to Set Pickup
+                                </button>
+                                <button type="button" class="btn btn-outline-success" id="btnPinDelivery" onclick="selectMapMode('delivery')">
+                                    <i class="bi bi-geo-alt me-1"></i> Click to Set Destination
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="pds-card-body p-0 position-relative">
+                            <div id="bookingMapPreview" style="height: 280px; width: 100%;"></div>
+                            <div class="position-absolute bottom-0 start-0 end-0 bg-dark bg-opacity-75 text-white px-3 py-1 text-center extra-small" style="font-size: 0.72rem; z-index: 1000; pointer-events: none;">
+                                <i class="bi bi-info-circle me-1"></i> Click anywhere or drag markers on map to update addresses live
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Live Quote Summary Card -->
+                    <div class="pds-card shadow-lg border-0" style="border-radius: 16px;">
+                        <div class="pds-card-header" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); color: white;">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-receipt"></i>
+                                <span class="fw-bold">Live Estimated Breakdown</span>
+                            </div>
+                        </div>
+                        <div class="pds-card-body p-4">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-secondary small">Calculated Road Distance:</span>
+                                <span class="fw-bold small" id="summaryDistance">-- km</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-secondary small">Billable Weight:</span>
+                                <span class="fw-bold small" id="summaryBillableWeight">-- kg</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-secondary small">Estimated Transit Time:</span>
+                                <span class="fw-bold text-success small" id="summaryEta">--</span>
+                            </div>
+                            
+                            <hr class="my-3">
+
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="text-muted small">Base Fare:</span>
+                                <span class="small" id="summaryBaseFare">$5.00</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="text-muted small">Distance Charge:</span>
+                                <span class="small" id="summaryDistanceCharge">$0.00</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-3">
+                                <span class="text-muted small">Weight & Volume:</span>
+                                <span class="small" id="summaryWeightCharge">$0.00</span>
+                            </div>
+
+                            <div class="p-3 bg-light rounded d-flex justify-content-between align-items-center mb-4 border">
+                                <div>
+                                    <span class="fw-bold text-dark d-block">Estimated Total:</span>
+                                    <span class="extra-small text-muted" style="font-size: 0.75rem;">Includes all taxes and routing</span>
+                                </div>
+                                <div class="text-end">
+                                    <h3 class="fw-bold text-primary mb-0" id="summaryTotal">$0.00</h3>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-pds-primary w-100 py-3 fw-bold fs-5 shadow">
+                                <i class="bi bi-check2-circle me-1"></i> Confirm & Book Shipment
+                            </button>
+                            <p class="text-center text-muted extra-small mt-2 mb-0" style="font-size: 0.75rem;">
+                                Instant tracking ID generation upon confirmation
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- ========================================================================= -->
+<!-- Full-Featured Dedicated Map Location Picker Modal (Zero-Typing Experience) -->
+<!-- ========================================================================= -->
+<div class="modal fade" id="mapPickerModal" tabindex="-1" aria-labelledby="mapPickerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
+            <div class="modal-header bg-dark text-white px-4 py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="badge bg-primary p-2 rounded-circle" id="modalHeaderBadge">
+                        <i class="bi bi-geo-alt-fill text-white fs-6"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold mb-0" id="mapPickerModalLabel">Pick Location on Map</h5>
+                        <small class="text-white-50" id="mapPickerModalSub">Click anywhere or drag the pin to select address</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <div class="modal-body p-0 position-relative">
+                <!-- Search bar overlay inside modal -->
+                <div class="position-absolute top-0 start-0 end-0 p-3" style="z-index: 1050; pointer-events: none;">
+                    <div class="input-group shadow-lg" style="pointer-events: auto; max-width: 460px; margin: 0 auto; border-radius: 10px; overflow: hidden;">
+                        <span class="input-group-text bg-white border-0 text-primary ps-3"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control border-0 shadow-none ps-1" id="modalSearchInput" placeholder="Search any street, area, city..." autocomplete="off" />
+                        <button class="btn btn-primary px-3" type="button" onclick="performModalSearch()">Search</button>
+                    </div>
+                    <div id="modalSearchResults" class="list-group shadow-lg mt-1 mx-auto d-none" style="pointer-events: auto; max-width: 460px; max-height: 180px; overflow-y: auto;"></div>
+                </div>
+
+                <!-- Modal Map Container -->
+                <div id="modalPickerMap" style="height: 420px; width: 100%;"></div>
+
+                <!-- GPS shortcut inside modal (shown only for pickup) -->
+                <div id="modalGpsBtnContainer" class="position-absolute" style="bottom: 90px; right: 15px; z-index: 1040;">
+                    <button type="button" class="btn btn-light shadow border rounded-circle p-2" onclick="locateModalGPS()" title="Center on My GPS Location" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+                        <i class="bi bi-crosshair fs-5 text-primary"></i>
+                    </button>
+                </div>
+
+                <!-- Live Selected Address Bar & Action -->
+                <div class="p-3 bg-light border-top d-flex flex-wrap align-items-center justify-content-between gap-3">
+                    <div class="flex-grow-1">
+                        <span class="text-muted extra-small d-block text-uppercase fw-bold">Selected Pin Location</span>
+                        <div class="fw-bold text-dark text-truncate" id="modalSelectedAddressText" style="max-width: 440px;">
+                            <span class="text-muted">Click anywhere on map to pin address...</span>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-success rounded-pill px-4 fw-bold text-white shadow-sm" id="btnConfirmModalLocation" onclick="confirmModalSelection()">
+                            <i class="bi bi-check-lg me-1"></i> Confirm & Use This Location
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        let currentPickupLat = 44.0462;
+        let currentPickupLon = -123.0220;
+        let currentDeliveryLat = 45.5152;
+        let currentDeliveryLon = -122.6784;
+        let bookingMapApi = null;
+        let currentMapMode = 'pickup';
+
+        // Modal Picker State
+        let modalTarget = 'pickup'; // 'pickup' or 'delivery'
+        let modalMapApi = null;
+        let modalSelectedLat = 0;
+        let modalSelectedLon = 0;
+        let modalSelectedAddressDto = null;
+        let mapPickerModalInstance = null;
+
+        document.addEventListener('DOMContentLoaded', function () {
+            onSavedPickupChanged();
+            initInteractiveBookingMap();
+            setupAutocomplete('pickupStreet', 'pickupAutocompleteResults', 'pickupCity', 'pickupState', 'pickupZip', 'pickupLat', 'pickupLon', true);
+            setupAutocomplete('deliveryStreet', 'deliveryAutocompleteResults', 'deliveryCity', 'deliveryState', 'deliveryZip', 'deliveryLat', 'deliveryLon', false);
+            setupModalSearchAutocomplete();
+            updateTierCards();
+            triggerQuoteCalculation();
+        });
+
+        function initInteractiveBookingMap() {
+            if (!window.ParcelMap) return;
+
+            bookingMapApi = window.ParcelMap.initBookingInteractiveMap('bookingMapPreview', {
+                pickupLat: currentPickupLat,
+                pickupLon: currentPickupLon,
+                deliveryLat: currentDeliveryLat,
+                deliveryLon: currentDeliveryLon,
+                activePinMode: currentMapMode,
+                onPickupChanged: function (lat, lon, addr) {
+                    currentPickupLat = lat;
+                    currentPickupLon = lon;
+                    document.getElementById('pickupLat').value = lat;
+                    document.getElementById('pickupLon').value = lon;
+
+                    if (addr) {
+                        if (addr.street) document.getElementById('pickupStreet').value = addr.street;
+                        else if (addr.formattedAddress) document.getElementById('pickupStreet').value = addr.formattedAddress;
+                        if (addr.city) document.getElementById('pickupCity').value = addr.city;
+                        if (addr.state) document.getElementById('pickupState').value = addr.state;
+                        if (addr.postalCode) document.getElementById('pickupZip').value = addr.postalCode;
+                    }
+                    triggerQuoteCalculation();
+                },
+                onDeliveryChanged: function (lat, lon, addr) {
+                    currentDeliveryLat = lat;
+                    currentDeliveryLon = lon;
+                    document.getElementById('deliveryLat').value = lat;
+                    document.getElementById('deliveryLon').value = lon;
+
+                    if (addr) {
+                        if (addr.street) document.getElementById('deliveryStreet').value = addr.street;
+                        else if (addr.formattedAddress) document.getElementById('deliveryStreet').value = addr.formattedAddress;
+                        if (addr.city) document.getElementById('deliveryCity').value = addr.city;
+                        if (addr.state) document.getElementById('deliveryState').value = addr.state;
+                        if (addr.postalCode) document.getElementById('deliveryZip').value = addr.postalCode;
+                    }
+                    triggerQuoteCalculation();
+                }
+            });
+        }
+
+        // =========================================================
+        // Fullscreen/Dedicated Map Picker Modal Functions
+        // =========================================================
+        function openMapPicker(target) {
+            modalTarget = target;
+            const modalEl = document.getElementById('mapPickerModal');
+            if (!mapPickerModalInstance) {
+                mapPickerModalInstance = new bootstrap.Modal(modalEl);
+            }
+
+            const titleEl = document.getElementById('mapPickerModalLabel');
+            const subEl = document.getElementById('mapPickerModalSub');
+            const badgeEl = document.getElementById('modalHeaderBadge');
+            const btnConfirm = document.getElementById('btnConfirmModalLocation');
+            const gpsBtn = document.getElementById('modalGpsBtnContainer');
+
+            if (target === 'pickup') {
+                titleEl.innerText = 'Select Pickup Location on Map';
+                subEl.innerText = 'Click anywhere or drag pin to choose where the courier picks up';
+                badgeEl.className = 'badge bg-primary p-2 rounded-circle';
+                btnConfirm.className = 'btn btn-primary rounded-pill px-4 fw-bold text-white shadow-sm';
+                if (gpsBtn) gpsBtn.classList.remove('d-none');
+                modalSelectedLat = currentPickupLat;
+                modalSelectedLon = currentPickupLon;
+            } else {
+                titleEl.innerText = 'Select Delivery Destination on Map';
+                subEl.innerText = 'Click anywhere or drag pin to choose the drop-off destination';
+                badgeEl.className = 'badge bg-success p-2 rounded-circle';
+                btnConfirm.className = 'btn btn-success rounded-pill px-4 fw-bold text-white shadow-sm';
+                if (gpsBtn) gpsBtn.classList.add('d-none');
+                modalSelectedLat = currentDeliveryLat;
+                modalSelectedLon = currentDeliveryLon;
+            }
+
+            mapPickerModalInstance.show();
+
+            // Initialize or resize Leaflet modal map after modal is shown
+            setTimeout(function () {
+                initModalPickerMap(modalSelectedLat, modalSelectedLon, target);
+            }, 300);
+        }
+
+        function initModalPickerMap(lat, lon, target) {
+            if (!window.ParcelMap) return;
+
+            modalSelectedLat = lat;
+            modalSelectedLon = lon;
+
+            modalMapApi = window.ParcelMap.initPickerMap('modalPickerMap', {
+                lat: lat,
+                lon: lon,
+                label: target === 'pickup' ? '📦 Pickup Pin' : '📍 Delivery Destination Pin',
+                iconType: target === 'pickup' ? 'pickup' : 'delivery',
+                onLocationSelected: function (newLat, newLon, addr) {
+                    modalSelectedLat = newLat;
+                    modalSelectedLon = newLon;
+                    modalSelectedAddressDto = addr;
+                    updateModalAddressText(addr, newLat, newLon);
+                }
+            });
+
+            // Trigger initial reverse geocode for modal text
+            window.ParcelMap.reverseGeocode(lat, lon, function (addr) {
+                modalSelectedAddressDto = addr;
+                updateModalAddressText(addr, lat, lon);
+            });
+        }
+
+        function updateModalAddressText(addr, lat, lon) {
+            const textEl = document.getElementById('modalSelectedAddressText');
+            if (addr && addr.formattedAddress) {
+                textEl.innerHTML = `<i class="bi bi-geo-alt-fill text-primary me-1"></i> ${addr.formattedAddress}`;
+            } else {
+                textEl.innerHTML = `<i class="bi bi-geo-alt-fill text-primary me-1"></i> Coordinates: ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+            }
+        }
+
+        function confirmModalSelection() {
+            if (!modalSelectedLat || !modalSelectedLon) {
+                if (mapPickerModalInstance) mapPickerModalInstance.hide();
+                return;
+            }
+
+            if (modalTarget === 'pickup') {
+                currentPickupLat = modalSelectedLat;
+                currentPickupLon = modalSelectedLon;
+                document.getElementById('pickupLat').value = modalSelectedLat;
+                document.getElementById('pickupLon').value = modalSelectedLon;
+
+                // Ensure "Enter New Pickup" mode is checked
+                const newRadio = document.getElementById('pickupModeNew');
+                if (newRadio) {
+                    newRadio.checked = true;
+                    togglePickupMode();
+                }
+
+                if (modalSelectedAddressDto) {
+                    if (modalSelectedAddressDto.street) document.getElementById('pickupStreet').value = modalSelectedAddressDto.street;
+                    else if (modalSelectedAddressDto.formattedAddress) document.getElementById('pickupStreet').value = modalSelectedAddressDto.formattedAddress;
+                    if (modalSelectedAddressDto.city) document.getElementById('pickupCity').value = modalSelectedAddressDto.city;
+                    if (modalSelectedAddressDto.state) document.getElementById('pickupState').value = modalSelectedAddressDto.state;
+                    if (modalSelectedAddressDto.postalCode) document.getElementById('pickupZip').value = modalSelectedAddressDto.postalCode;
+                }
+
+                if (bookingMapApi) {
+                    bookingMapApi.setPickupLocation(modalSelectedLat, modalSelectedLon, true);
+                }
+            } else {
+                currentDeliveryLat = modalSelectedLat;
+                currentDeliveryLon = modalSelectedLon;
+                document.getElementById('deliveryLat').value = modalSelectedLat;
+                document.getElementById('deliveryLon').value = modalSelectedLon;
+
+                if (modalSelectedAddressDto) {
+                    if (modalSelectedAddressDto.street) document.getElementById('deliveryStreet').value = modalSelectedAddressDto.street;
+                    else if (modalSelectedAddressDto.formattedAddress) document.getElementById('deliveryStreet').value = modalSelectedAddressDto.formattedAddress;
+                    if (modalSelectedAddressDto.city) document.getElementById('deliveryCity').value = modalSelectedAddressDto.city;
+                    if (modalSelectedAddressDto.state) document.getElementById('deliveryState').value = modalSelectedAddressDto.state;
+                    if (modalSelectedAddressDto.postalCode) document.getElementById('deliveryZip').value = modalSelectedAddressDto.postalCode;
+                }
+
+                if (bookingMapApi) {
+                    bookingMapApi.setDeliveryLocation(modalSelectedLat, modalSelectedLon, true);
+                }
+            }
+
+            triggerQuoteCalculation();
+            if (mapPickerModalInstance) mapPickerModalInstance.hide();
+        }
+
+        function locateModalGPS() {
+            if (!window.ParcelMap) return;
+            window.ParcelMap.getCurrentLocation(
+                function (pos) {
+                    modalSelectedLat = pos.lat;
+                    modalSelectedLon = pos.lon;
+                    if (modalMapApi) {
+                        modalMapApi.setLocation(pos.lat, pos.lon, 'Your Current Live Location');
+                    }
+                    window.ParcelMap.reverseGeocode(pos.lat, pos.lon, function (addr) {
+                        modalSelectedAddressDto = addr;
+                        updateModalAddressText(addr, pos.lat, pos.lon);
+                    });
+                },
+                function (err) {
+                    alert(err || 'Could not retrieve GPS coordinates.');
+                }
+            );
+        }
+
+        function setupModalSearchAutocomplete() {
+            const input = document.getElementById('modalSearchInput');
+            const results = document.getElementById('modalSearchResults');
+            if (!input || !results) return;
+
+            input.addEventListener('input', function () {
+                const q = this.value.trim();
+                if (q.length < 2) {
+                    results.classList.add('d-none');
+                    return;
+                }
+
+                fetch(`/api/location/autocomplete?text=${encodeURIComponent(q)}`)
+                    .then(r => r.json())
+                    .then(items => {
+                        results.innerHTML = '';
+                        if (items && items.length > 0) {
+                            items.forEach(item => {
+                                const btn = document.createElement('button');
+                                btn.type = 'button';
+                                btn.className = 'list-group-item list-group-item-action small py-2';
+                                btn.innerHTML = `<i class="bi bi-geo-alt text-primary me-2"></i> ${item.formattedAddress}`;
+                                btn.onclick = () => {
+                                    input.value = item.formattedAddress;
+                                    modalSelectedLat = item.latitude;
+                                    modalSelectedLon = item.longitude;
+                                    modalSelectedAddressDto = item;
+                                    if (modalMapApi) {
+                                        modalMapApi.setLocation(item.latitude, item.longitude, item.formattedAddress);
+                                    }
+                                    updateModalAddressText(item, item.latitude, item.longitude);
+                                    results.classList.add('d-none');
+                                };
+                                results.appendChild(btn);
+                            });
+                            results.classList.remove('d-none');
+                        } else {
+                            results.classList.add('d-none');
+                        }
+                    })
+                    .catch(() => results.classList.add('d-none'));
+            });
+
+            document.addEventListener('click', e => {
+                if (!results.contains(e.target) && e.target !== input) {
+                    results.classList.add('d-none');
+                }
+            });
+        }
+
+        function performModalSearch() {
+            const input = document.getElementById('modalSearchInput');
+            const q = input?.value.trim();
+            if (!q) return;
+
+            fetch(`/api/location/geocode?address=${encodeURIComponent(q)}`)
+                .then(r => r.json())
+                .then(item => {
+                    if (item && item.latitude && item.longitude) {
+                        modalSelectedLat = item.latitude;
+                        modalSelectedLon = item.longitude;
+                        modalSelectedAddressDto = item;
+                        if (modalMapApi) {
+                            modalMapApi.setLocation(item.latitude, item.longitude, item.formattedAddress);
+                        }
+                        updateModalAddressText(item, item.latitude, item.longitude);
+                    }
+                })
+                .catch(err => console.log('Geocode search failed', err));
+        }
+
+        // =========================================================
+        // Inline Booking Form Functions
+        // =========================================================
+        function selectMapMode(mode) {
+            currentMapMode = mode;
+            if (bookingMapApi) {
+                bookingMapApi.setPinMode(mode);
+            }
+            const btnPickup = document.getElementById('btnPinPickup');
+            const btnDelivery = document.getElementById('btnPinDelivery');
+
+            if (mode === 'pickup') {
+                btnPickup.classList.add('active');
+                btnDelivery.classList.remove('active');
+            } else {
+                btnDelivery.classList.add('active');
+                btnPickup.classList.remove('active');
+            }
+        }
+
+        function useCurrentLocationForPickup() {
+            if (!window.ParcelMap) return;
+            const btn = event.currentTarget;
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Locating...';
+            btn.disabled = true;
+
+            window.ParcelMap.getCurrentLocation(
+                function (pos) {
+                    btn.innerHTML = originalHtml;
+                    btn.disabled = false;
+                    currentPickupLat = pos.lat;
+                    currentPickupLon = pos.lon;
+                    document.getElementById('pickupLat').value = pos.lat;
+                    document.getElementById('pickupLon').value = pos.lon;
+
+                    // Switch to new address mode if in saved mode
+                    const newRadio = document.getElementById('pickupModeNew');
+                    if (newRadio) {
+                        newRadio.checked = true;
+                        togglePickupMode();
+                    }
+
+                    if (bookingMapApi) {
+                        bookingMapApi.setPickupLocation(pos.lat, pos.lon, true);
+                    }
+
+                    window.ParcelMap.reverseGeocode(pos.lat, pos.lon, function (addr) {
+                        if (addr) {
+                            if (addr.street) document.getElementById('pickupStreet').value = addr.street;
+                            else if (addr.formattedAddress) document.getElementById('pickupStreet').value = addr.formattedAddress;
+                            if (addr.city) document.getElementById('pickupCity').value = addr.city;
+                            if (addr.state) document.getElementById('pickupState').value = addr.state;
+                            if (addr.postalCode) document.getElementById('pickupZip').value = addr.postalCode;
+                        }
+                        triggerQuoteCalculation();
+                    });
+                },
+                function (errMsg) {
+                    btn.innerHTML = originalHtml;
+                    btn.disabled = false;
+                    alert(errMsg || 'Could not retrieve your GPS location.');
+                }
+            );
+        }
+
+        function useCurrentLocationForDelivery() {
+            if (!window.ParcelMap) return;
+            const btn = event.currentTarget;
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Locating...';
+            btn.disabled = true;
+
+            window.ParcelMap.getCurrentLocation(
+                function (pos) {
+                    btn.innerHTML = originalHtml;
+                    btn.disabled = false;
+                    currentDeliveryLat = pos.lat;
+                    currentDeliveryLon = pos.lon;
+                    document.getElementById('deliveryLat').value = pos.lat;
+                    document.getElementById('deliveryLon').value = pos.lon;
+
+                    if (bookingMapApi) {
+                        bookingMapApi.setDeliveryLocation(pos.lat, pos.lon, true);
+                    }
+
+                    window.ParcelMap.reverseGeocode(pos.lat, pos.lon, function (addr) {
+                        if (addr) {
+                            if (addr.street) document.getElementById('deliveryStreet').value = addr.street;
+                            else if (addr.formattedAddress) document.getElementById('deliveryStreet').value = addr.formattedAddress;
+                            if (addr.city) document.getElementById('deliveryCity').value = addr.city;
+                            if (addr.state) document.getElementById('deliveryState').value = addr.state;
+                            if (addr.postalCode) document.getElementById('deliveryZip').value = addr.postalCode;
+                        }
+                        triggerQuoteCalculation();
+                    });
+                },
+                function (errMsg) {
+                    btn.innerHTML = originalHtml;
+                    btn.disabled = false;
+                    alert(errMsg || 'Could not retrieve your GPS location.');
+                }
+            );
+        }
+
+        function togglePickupMode() {
+            const isSaved = document.getElementById('pickupModeSaved')?.checked;
+            const savedBox = document.getElementById('savedPickupContainer');
+            const newBox = document.getElementById('newPickupContainer');
+
+            if (isSaved) {
+                if (savedBox) savedBox.classList.remove('d-none');
+                if (newBox) newBox.classList.add('d-none');
+                onSavedPickupChanged();
+            } else {
+                if (savedBox) savedBox.classList.add('d-none');
+                if (newBox) newBox.classList.remove('d-none');
+            }
+            triggerQuoteCalculation();
+        }
+
+        function onSavedPickupChanged() {
+            const select = document.getElementById('savedPickupSelect');
+            if (!select) return;
+            const selectedOpt = select.options[select.selectedIndex];
+            if (selectedOpt) {
+                currentPickupLat = parseFloat(selectedOpt.getAttribute('data-lat')) || 44.0462;
+                currentPickupLon = parseFloat(selectedOpt.getAttribute('data-lon')) || -123.0220;
+                document.getElementById('pickupLat').value = currentPickupLat;
+                document.getElementById('pickupLon').value = currentPickupLon;
+
+                if (bookingMapApi) {
+                    bookingMapApi.setPickupLocation(currentPickupLat, currentPickupLon, false);
+                }
+                triggerQuoteCalculation();
+            }
+        }
+
+        function onTierChanged() {
+            updateTierCards();
+            triggerQuoteCalculation();
+        }
+
+        function updateTierCards() {
+            document.querySelectorAll('.service-tier-card').forEach(card => card.classList.remove('border-primary', 'bg-primary-subtle', 'border-success', 'bg-success-subtle'));
+            const selectedTier = document.querySelector('input[name="DeliveryType"]:checked')?.value;
+            if (selectedTier === 'Standard') document.getElementById('tierStandardCard')?.classList.add('border-primary', 'bg-primary-subtle');
+            if (selectedTier === 'Express') document.getElementById('tierExpressCard')?.classList.add('border-primary', 'bg-primary-subtle');
+            if (selectedTier === 'SameDay') document.getElementById('tierSameDayCard')?.classList.add('border-success', 'bg-success-subtle');
+        }
+
+        function triggerQuoteCalculation() {
+            const weight = parseFloat(document.getElementById('parcelWeight')?.value) || 1.0;
+            const length = parseFloat(document.getElementById('parcelLength')?.value) || 10;
+            const width = parseFloat(document.getElementById('parcelWidth')?.value) || 10;
+            const height = parseFloat(document.getElementById('parcelHeight')?.value) || 10;
+            const deliveryType = document.querySelector('input[name="DeliveryType"]:checked')?.value || 'Standard';
+
+            const pLatVal = parseFloat(document.getElementById('pickupLat')?.value) || currentPickupLat;
+            const pLonVal = parseFloat(document.getElementById('pickupLon')?.value) || currentPickupLon;
+            const dLatVal = parseFloat(document.getElementById('deliveryLat')?.value) || currentDeliveryLat;
+            const dLonVal = parseFloat(document.getElementById('deliveryLon')?.value) || currentDeliveryLon;
+
+            const payload = {
+                pickupLat: pLatVal,
+                pickupLon: pLonVal,
+                pickupAddressText: document.getElementById('pickupStreet')?.value,
+                deliveryLat: dLatVal,
+                deliveryLon: dLonVal,
+                deliveryAddressText: document.getElementById('deliveryStreet')?.value,
+                weight: weight,
+                length: length,
+                width: width,
+                height: height,
+                deliveryType: deliveryType
+            };
+
+            fetch('/Parcel/CalculateQuote', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.quote) {
+                    const q = data.quote;
+                    document.getElementById('summaryDistance').innerText = q.distanceKm + ' km';
+                    document.getElementById('summaryBillableWeight').innerText = q.billableWeightKg + ' kg';
+                    document.getElementById('summaryEta').innerText = q.estimatedDeliveryDisplay;
+                    document.getElementById('summaryBaseFare').innerText = '$' + q.baseFare.toFixed(2);
+                    document.getElementById('summaryDistanceCharge').innerText = '$' + q.distanceCharge.toFixed(2);
+                    document.getElementById('summaryWeightCharge').innerText = '$' + (q.weightCharge + q.volumetricSurcharge).toFixed(2);
+                    document.getElementById('summaryTotal').innerText = '$' + q.totalCharge.toFixed(2);
+
+                    const badge = document.getElementById('routeStatusBadge');
+                    badge.innerText = `${q.distanceKm} km • Active Route`;
+                    badge.className = 'badge bg-success-subtle text-success small';
+
+                    // Update Leaflet Route Geometry on interactive map
+                    if (bookingMapApi) {
+                        bookingMapApi.updateRouteGeometry(null);
+                    }
+                }
+            })
+            .catch(err => console.log('Quote error', err));
+        }
+
+        function setupAutocomplete(inputId, resultsId, cityId, stateId, zipId, latId, lonId, isPickup) {
+            const input = document.getElementById(inputId);
+            const results = document.getElementById(resultsId);
+            if (!input || !results) return;
+
+            input.addEventListener('input', function () {
+                const q = this.value.trim();
+                if (q.length < 2) {
+                    results.classList.add('d-none');
+                    return;
+                }
+
+                fetch(`/api/location/autocomplete?text=${encodeURIComponent(q)}`)
+                    .then(r => r.json())
+                    .then(items => {
+                        results.innerHTML = '';
+                        if (items && items.length > 0) {
+                            items.forEach(item => {
+                                const btn = document.createElement('button');
+                                btn.type = 'button';
+                                btn.className = 'list-group-item list-group-item-action small py-2';
+                                btn.innerHTML = `<i class="bi bi-geo-alt me-1 text-primary"></i> ${item.formattedAddress}`;
+                                btn.onclick = () => {
+                                    input.value = item.street || item.formattedAddress;
+                                    if (item.city) document.getElementById(cityId).value = item.city;
+                                    if (item.state) document.getElementById(stateId).value = item.state;
+                                    if (item.postalCode) document.getElementById(zipId).value = item.postalCode;
+                                    document.getElementById(latId).value = item.latitude;
+                                    document.getElementById(lonId).value = item.longitude;
+                                    
+                                    if (isPickup) {
+                                        currentPickupLat = item.latitude;
+                                        currentPickupLon = item.longitude;
+                                        if (bookingMapApi) bookingMapApi.setPickupLocation(item.latitude, item.longitude, true);
+                                    } else {
+                                        currentDeliveryLat = item.latitude;
+                                        currentDeliveryLon = item.longitude;
+                                        if (bookingMapApi) bookingMapApi.setDeliveryLocation(item.latitude, item.longitude, true);
+                                    }
+                                    results.classList.add('d-none');
+                                    triggerQuoteCalculation();
+                                };
+                                results.appendChild(btn);
+                            });
+                            results.classList.remove('d-none');
+                        } else {
+                            results.classList.add('d-none');
+                        }
+                    })
+                    .catch(() => results.classList.add('d-none'));
+            });
+
+            document.addEventListener('click', e => {
+                if (!results.contains(e.target) && e.target !== input) {
+                    results.classList.add('d-none');
+                }
+            });
+        }
+    </script>
+}

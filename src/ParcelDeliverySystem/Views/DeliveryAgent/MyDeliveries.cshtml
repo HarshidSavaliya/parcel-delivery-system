@@ -1,0 +1,198 @@
+@model IReadOnlyList<ParcelDeliverySystem.Models.Entities.Parcel>
+@using ParcelDeliverySystem.Models.Enums
+@{
+    ViewData["Title"] = "My Deliveries";
+    var activeDeliveries = Model?.Where(p => 
+        p.Status == ParcelStatus.AgentAssigned || 
+        p.Status == ParcelStatus.PickedUp || 
+        p.Status == ParcelStatus.InTransit || 
+        p.Status == ParcelStatus.OutForDelivery).ToList() ?? new List<ParcelDeliverySystem.Models.Entities.Parcel>();
+
+    var completedDeliveries = Model?.Where(p => 
+        p.Status == ParcelStatus.Delivered || 
+        p.Status == ParcelStatus.DeliveryFailed || 
+        p.Status == ParcelStatus.FailedAttempt ||
+        p.Status == ParcelStatus.Cancelled).ToList() ?? new List<ParcelDeliverySystem.Models.Entities.Parcel>();
+}
+
+<div class="container py-4">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h3 class="fw-bold mb-1">My Deliveries</h3>
+            <p class="text-muted small mb-0">Track active dispatches and review historical delivery performance.</p>
+        </div>
+        <a asp-action="AvailableRequests" class="btn btn-success btn-sm rounded-pill px-3">
+            <i class="bi bi-plus-circle me-1"></i> Claim New Delivery
+        </a>
+    </div>
+
+    <!-- Active Runs Section -->
+    <div class="pds-card shadow-sm mb-4 border-0" style="border-radius: 16px;">
+        <div class="pds-card-header bg-white py-3 px-4 border-bottom">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="avatar-circle" style="width: 32px; height: 32px; background: #ecfdf5; color: #059669; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
+                        <i class="bi bi-truck"></i>
+                    </span>
+                    <h5 class="fw-bold mb-0">Active Deliveries in Progress</h5>
+                </div>
+                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1">
+                    @activeDeliveries.Count active
+                </span>
+            </div>
+        </div>
+
+        <div class="pds-card-body p-0">
+            @if (activeDeliveries.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light small">
+                            <tr>
+                                <th>Tracking Code</th>
+                                <th>Pickup From</th>
+                                <th>Destination</th>
+                                <th>Recipient Contact</th>
+                                <th>Status</th>
+                                <th class="text-end">Manage Run</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var parcel in activeDeliveries)
+                            {
+                                <tr>
+                                    <td>
+                                        <span class="tracking-code text-success fw-bold font-monospace">@parcel.TrackingId</span>
+                                        <div class="extra-small text-muted">@parcel.ParcelType &bull; @parcel.WeightKg kg</div>
+                                    </td>
+                                    <td>
+                                        <div class="small fw-semibold text-truncate" style="max-width: 180px;">@parcel.PickupAddress.FormattedAddress</div>
+                                    </td>
+                                    <td>
+                                        <div class="small fw-semibold text-truncate" style="max-width: 180px;">@parcel.DeliveryAddress.FormattedAddress</div>
+                                    </td>
+                                    <td>
+                                        <div class="small fw-semibold">@parcel.RecipientName</div>
+                                        <div class="text-muted extra-small">
+                                            <a href="tel:@parcel.RecipientPhone" class="text-decoration-none text-muted">
+                                                <i class="bi bi-telephone-fill text-success me-1"></i>@parcel.RecipientPhone
+                                            </a>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge @(parcel.Status == ParcelStatus.OutForDelivery ? "bg-warning text-dark fw-bold" : parcel.Status == ParcelStatus.InTransit ? "bg-primary text-white" : "bg-info-subtle text-info border border-info-subtle") rounded-pill px-2 py-1">
+                                            @parcel.Status
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        <a asp-action="ManageDelivery" asp-route-id="@parcel.Id" class="btn btn-sm btn-primary rounded-pill px-3 fw-semibold">
+                                            <i class="bi bi-sliders me-1"></i> Update Status
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center p-5">
+                    <div class="avatar-circle mx-auto mb-3" style="width: 50px; height: 50px; background: #f0fdf4; color: #16a34a; font-size: 1.5rem; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
+                        <i class="bi bi-check-all"></i>
+                    </div>
+                    <h6 class="fw-bold">No Active Deliveries</h6>
+                    <p class="text-muted small mb-3">You currently have no packages in transit. Check the available pool for new requests.</p>
+                    <a asp-action="AvailableRequests" class="btn btn-sm btn-outline-success">
+                        <i class="bi bi-inbox me-1"></i> View Available Pool
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Completed Runs Section -->
+    <div class="pds-card shadow-sm border-0" style="border-radius: 16px;">
+        <div class="pds-card-header bg-white py-3 px-4 border-bottom">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="avatar-circle" style="width: 32px; height: 32px; background: #f1f5f9; color: #475569; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
+                        <i class="bi bi-clock-history"></i>
+                    </span>
+                    <h5 class="fw-bold mb-0">Delivery History</h5>
+                </div>
+                <span class="badge bg-secondary-subtle text-secondary rounded-pill px-3 py-1">
+                    @completedDeliveries.Count total
+                </span>
+            </div>
+        </div>
+
+        <div class="pds-card-body p-0">
+            @if (completedDeliveries.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light small">
+                            <tr>
+                                <th>Tracking Code</th>
+                                <th>Destination</th>
+                                <th>Recipient</th>
+                                <th>Outcome</th>
+                                <th>Completed At</th>
+                                <th class="text-end">Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var parcel in completedDeliveries)
+                            {
+                                <tr>
+                                    <td>
+                                        <span class="tracking-code font-monospace fw-bold">@parcel.TrackingId</span>
+                                    </td>
+                                    <td>
+                                        <div class="small text-truncate" style="max-width: 200px;">@parcel.DeliveryAddress.FormattedAddress</div>
+                                    </td>
+                                    <td>
+                                        <div class="small fw-semibold">@parcel.RecipientName</div>
+                                    </td>
+                                    <td>
+                                        @if (parcel.Status == ParcelStatus.Delivered)
+                                        {
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">
+                                                <i class="bi bi-check-circle-fill me-1"></i> Delivered
+                                            </span>
+                                        }
+                                        else if (parcel.Status == ParcelStatus.DeliveryFailed || parcel.Status == ParcelStatus.FailedAttempt)
+                                        {
+                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill">
+                                                <i class="bi bi-x-circle-fill me-1"></i> Failed
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary rounded-pill">@parcel.Status</span>
+                                        }
+                                    </td>
+                                    <td class="small text-muted">
+                                        @(parcel.DeliveredAt.HasValue ? parcel.DeliveredAt.Value.ToString("MMM dd, yyyy hh:mm tt") : (parcel.UpdatedAt.HasValue ? parcel.UpdatedAt.Value.ToString("MMM dd, yyyy") : "-"))
+                                    </td>
+                                    <td class="text-end">
+                                        <a asp-action="ManageDelivery" asp-route-id="@parcel.Id" class="btn btn-sm btn-outline-secondary rounded-pill">
+                                            View
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center p-4 text-muted small">
+                    No completed delivery history records found.
+                </div>
+            }
+        </div>
+    </div>
+</div>

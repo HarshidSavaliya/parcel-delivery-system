@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "dgSpecHash": "OFkZeCynv0k=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\Harshid\\Desktop\\parcel-delivery-system\\src\\ParcelDeliverySystem\\ParcelDeliverySystem.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Harshid\\.nuget\\packages\\bcrypt.net-next\\4.2.0\\bcrypt.net-next.4.2.0.nupkg.sha512",
+    "C:\\Users\\Harshid\\.nuget\\packages\\dnsclient\\1.6.1\\dnsclient.1.6.1.nupkg.sha512",
+    "C:\\Users\\Harshid\\.nuget\\packages\\mongodb.bson\\3.12.0\\mongodb.bson.3.12.0.nupkg.sha512",
+    "C:\\Users\\Harshid\\.nuget\\packages\\mongodb.driver\\3.12.0\\mongodb.driver.3.12.0.nupkg.sha512",
+    "C:\\Users\\Harshid\\.nuget\\packages\\sharpcompress\\0.48.1\\sharpcompress.0.48.1.nupkg.sha512",
+    "C:\\Users\\Harshid\\.nuget\\packages\\snappier\\1.3.1\\snappier.1.3.1.nupkg.sha512",
+    "C:\\Users\\Harshid\\.nuget\\packages\\zstdsharp.port\\0.7.3\\zstdsharp.port.0.7.3.nupkg.sha512"
+  ],
+  "logs": []
+}

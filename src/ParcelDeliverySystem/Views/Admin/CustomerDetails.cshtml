@@ -1,0 +1,203 @@
+@model ParcelDeliverySystem.ViewModels.Admin.AdminCustomerDetailViewModel
+@using ParcelDeliverySystem.Models.Enums
+@{
+    ViewData["Title"] = $"Customer Details - {Model.Customer.FullName}";
+    var c = Model.Customer;
+}
+
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Dashboard">Admin Dashboard</a></li>
+            <li class="breadcrumb-item"><a asp-action="Users">Customers</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@c.FullName</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <h3 class="fw-bold mb-1">@c.FullName</h3>
+            <p class="text-muted small mb-0">Customer ID: <span class="font-monospace">@c.Id</span> &bull; Member Since @c.CreatedAt.ToString("MMMM dd, yyyy")</p>
+        </div>
+        <div class="d-flex gap-2">
+            <form asp-action="ToggleUserStatus" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="userId" value="@c.Id" />
+                <input type="hidden" name="returnAction" value="CustomerDetails" />
+                <button type="submit" class="btn btn-sm @(c.IsActive ? "btn-outline-danger" : "btn-outline-success") rounded-pill px-3">
+                    @(c.IsActive ? "Deactivate Account" : "Activate Account")
+                </button>
+            </form>
+            <a asp-action="Users" class="btn btn-outline-secondary btn-sm rounded-pill px-3">Back to List</a>
+        </div>
+    </div>
+
+    <!-- Summary Metrics -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+            <div class="stat-card">
+                <div class="stat-icon primary">
+                    <i class="bi bi-box-seam"></i>
+                </div>
+                <div>
+                    <div class="stat-value">@Model.BookingHistory.Count</div>
+                    <div class="stat-label">Total Bookings</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-3">
+            <div class="stat-card">
+                <div class="stat-icon success">
+                    <i class="bi bi-check-circle-fill"></i>
+                </div>
+                <div>
+                    <div class="stat-value">@Model.CompletedBookingsCount</div>
+                    <div class="stat-label">Delivered Shipments</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-3">
+            <div class="stat-card">
+                <div class="stat-icon accent">
+                    <i class="bi bi-currency-dollar"></i>
+                </div>
+                <div>
+                    <div class="stat-value">$@Model.TotalSpent.ToString("F2")</div>
+                    <div class="stat-label">Total Spend (LTV)</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-3">
+            <div class="stat-card">
+                <div class="stat-icon warning">
+                    <i class="bi bi-geo-alt"></i>
+                </div>
+                <div>
+                    <div class="stat-value">@Model.SavedAddresses.Count</div>
+                    <div class="stat-label">Saved Addresses</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Customer Profile & Saved Addresses -->
+        <div class="col-lg-4">
+            <div class="pds-card p-4 mb-4 shadow-sm border-0" style="border-radius: 16px;">
+                <h5 class="fw-bold mb-3"><i class="bi bi-person-lines-fill me-2 text-primary"></i>Customer Profile</h5>
+                <div class="mb-2">
+                    <span class="text-muted extra-small">Email Address:</span>
+                    <div class="fw-semibold small">@c.Email</div>
+                </div>
+                <div class="mb-2">
+                    <span class="text-muted extra-small">Phone Number:</span>
+                    <div class="fw-semibold small font-monospace">@c.PhoneNumber</div>
+                </div>
+                <div class="mb-2">
+                    <span class="text-muted extra-small">Account Status:</span>
+                    <div>
+                        @if (c.IsActive)
+                        {
+                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">Active</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill">Disabled</span>
+                        }
+                    </div>
+                </div>
+                @if (c.LastLoginAt.HasValue)
+                {
+                    <div class="mb-2">
+                        <span class="text-muted extra-small">Last Login:</span>
+                        <div class="small text-muted">@c.LastLoginAt.Value.ToString("MMM dd, yyyy hh:mm tt")</div>
+                    </div>
+                }
+            </div>
+
+            <!-- Saved Addresses -->
+            <div class="pds-card p-4 shadow-sm border-0" style="border-radius: 16px;">
+                <h5 class="fw-bold mb-3"><i class="bi bi-geo-alt-fill me-2 text-primary"></i>Saved Address Book</h5>
+                @if (Model.SavedAddresses.Any())
+                {
+                    @foreach (var addr in Model.SavedAddresses)
+                    {
+                        <div class="p-3 bg-light rounded border mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span class="fw-bold small">@addr.Label</span>
+                                @if (addr.IsDefault)
+                                {
+                                    <span class="badge bg-primary extra-small">Default</span>
+                                }
+                            </div>
+                            <div class="small text-secondary mt-1">@addr.FormattedAddress</div>
+                            <div class="extra-small text-muted mt-1">Recipient: @addr.RecipientName (@addr.PhoneNumber)</div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-muted small">No saved addresses on file.</div>
+                }
+            </div>
+        </div>
+
+        <!-- Booking History -->
+        <div class="col-lg-8">
+            <div class="pds-card shadow-sm border-0" style="border-radius: 16px;">
+                <div class="pds-card-header bg-white py-3 px-4 border-bottom">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-box-seam me-2 text-primary"></i>Booking History</h5>
+                </div>
+                <div class="pds-card-body p-0">
+                    @if (Model.BookingHistory.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0 small">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Tracking ID</th>
+                                        <th>Destination</th>
+                                        <th>Delivery Type</th>
+                                        <th>Price</th>
+                                        <th>Status</th>
+                                        <th>Date</th>
+                                        <th class="text-end">Track</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var p in Model.BookingHistory)
+                                    {
+                                        <tr>
+                                            <td><span class="tracking-code font-monospace fw-bold text-primary">@p.TrackingId</span></td>
+                                            <td><div class="text-truncate" style="max-width: 150px;">@p.DeliveryAddress.City</div></td>
+                                            <td><span class="badge bg-light text-dark border">@p.DeliveryType</span></td>
+                                            <td><span class="fw-bold text-success">$@p.DeliveryCharge.ToString("F2")</span></td>
+                                            <td>
+                                                <span class="badge @(p.Status == ParcelStatus.Delivered ? "bg-success" : p.Status == ParcelStatus.Cancelled ? "bg-danger" : "bg-warning text-dark") rounded-pill">
+                                                    @p.Status
+                                                </span>
+                                            </td>
+                                            <td class="text-muted">@p.BookingDate.ToString("MMM dd, yyyy")</td>
+                                            <td class="text-end">
+                                                <a asp-controller="Tracking" asp-action="Track" asp-route-trackingId="@p.TrackingId" class="btn btn-sm btn-outline-secondary rounded-pill py-0 px-2">View</a>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center p-4 text-muted small">
+                            No shipments booked by this customer yet.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

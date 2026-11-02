@@ -1,0 +1,106 @@
+@model ParcelDeliverySystem.Models.Entities.Parcel?
+@{
+    ViewData["Title"] = "Track Shipment";
+    var trackingQuery = ViewBag.SearchedTrackingId as string;
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+
+            <div class="text-center mb-4">
+                <h3 class="fw-bold mb-1">Track Your Shipment</h3>
+                <p class="text-muted small">Enter your unique tracking code below to inspect delivery status</p>
+            </div>
+
+            <!-- Search Form -->
+            <div class="pds-card p-3 shadow-sm mb-4" style="border-radius: 16px;">
+                <form asp-action="Track" method="get" class="d-flex flex-column flex-sm-row gap-2">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-0 text-primary fs-5 ps-3">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" name="trackingId" class="form-control border-0 shadow-none ps-2" 
+                               value="@trackingQuery" placeholder="Enter Tracking Number (e.g. PDS-2026-XXXXX)..." required />
+                    </div>
+                    <button type="submit" class="btn btn-pds-primary px-4 py-2 text-nowrap">
+                        Track Now
+                    </button>
+                </form>
+            </div>
+
+            @if (!string.IsNullOrEmpty(trackingQuery))
+            {
+                if (Model == null)
+                {
+                    <div class="pds-card text-center p-5 shadow-sm">
+                        <div class="stat-icon warning mx-auto mb-3" style="width: 60px; height: 60px;">
+                            <i class="bi bi-question-circle-fill fs-2"></i>
+                        </div>
+                        <h4 class="fw-bold mb-1">No Shipment Found</h4>
+                        <p class="text-secondary mb-3">We could not find any parcel matching tracking code <span class="tracking-code text-danger fw-bold">@trackingQuery</span>.</p>
+                        <span class="text-muted small">Please verify the code or check with the sender.</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="pds-card shadow-sm mb-4">
+                        <div class="pds-card-header bg-light">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-box-seam text-primary"></i>
+                                <span class="tracking-code fw-bold">@Model.TrackingId</span>
+                            </div>
+                            <span class="badge bg-primary px-3 py-2 rounded-pill">@Model.Status</span>
+                        </div>
+                        <div class="pds-card-body">
+                            <div class="row g-3 mb-4">
+                                <div class="col-sm-6">
+                                    <div class="small text-muted">Pickup Location</div>
+                                    <div class="fw-semibold">@Model.PickupAddress.FormattedAddress</div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="small text-muted">Delivery Destination</div>
+                                    <div class="fw-semibold">@Model.DeliveryAddress.FormattedAddress</div>
+                                </div>
+                                <div class="col-sm-4">
+                                    <div class="small text-muted">Package Type</div>
+                                    <div class="fw-semibold">@Model.PackageType (@Model.WeightKg kg)</div>
+                                </div>
+                                <div class="col-sm-4">
+                                    <div class="small text-muted">Booking Date</div>
+                                    <div class="fw-semibold">@Model.CreatedAt.ToString("MMM dd, yyyy HH:mm")</div>
+                                </div>
+                                <div class="col-sm-4">
+                                    <div class="small text-muted">Recipient</div>
+                                    <div class="fw-semibold">@Model.RecipientName</div>
+                                </div>
+                            </div>
+
+                            @if (Model.StatusHistory != null && Model.StatusHistory.Any())
+                            {
+                                <h6 class="fw-bold mb-3 border-bottom pb-2">Status Timeline</h6>
+                                <div class="timeline ps-2">
+                                    @foreach (var step in Model.StatusHistory.OrderByDescending(s => s.Timestamp))
+                                    {
+                                        <div class="d-flex gap-3 mb-3">
+                                            <div class="status-dot available mt-1"></div>
+                                            <div>
+                                                <div class="fw-bold">@step.Status</div>
+                                                <div class="small text-muted">@step.Timestamp.ToString("MMM dd, yyyy hh:mm tt") @(string.IsNullOrEmpty(step.Location) ? "" : $"• {step.Location}")</div>
+                                                @if (!string.IsNullOrEmpty(step.Notes))
+                                                {
+                                                    <div class="small text-secondary mt-1">@step.Notes</div>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            }
+
+        </div>
+    </div>
+</div>

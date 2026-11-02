@@ -1,0 +1,95 @@
+@model ParcelDeliverySystem.ViewModels.Auth.LoginViewModel
+@{
+    ViewData["Title"] = "Sign In";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-7 col-lg-5">
+            <div class="pds-card shadow-lg border-0" style="border-radius: 20px;">
+                <div class="pds-card-body p-4 p-md-5">
+                    
+                    <div class="text-center mb-4">
+                        <div class="brand-icon mx-auto mb-3" style="width: 50px; height: 50px; font-size: 1.4rem;">
+                            <i class="bi bi-shield-lock-fill"></i>
+                        </div>
+                        <h3 class="fw-bold mb-1">Welcome Back</h3>
+                        <p class="text-muted small">Sign in to your Parcel Delivery account</p>
+                    </div>
+
+                    <form asp-action="Login" method="post" id="loginForm">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="ReturnUrl" />
+
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small" role="alert"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="Email" class="form-label small fw-semibold text-secondary">Email Address</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-envelope"></i></span>
+                                <input asp-for="Email" class="form-control border-start-0" id="loginEmail" placeholder="name@example.com" autofocus />
+                            </div>
+                            <span asp-validation-for="Email" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label asp-for="Password" class="form-label small fw-semibold text-secondary mb-0">Password</label>
+                            </div>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-lock"></i></span>
+                                <input asp-for="Password" class="form-control border-start-0" id="loginPassword" placeholder="••••••••" />
+                            </div>
+                            <span asp-validation-for="Password" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-4 form-check">
+                            <input asp-for="RememberMe" class="form-check-input" />
+                            <label asp-for="RememberMe" class="form-check-label small text-secondary">Remember me on this browser</label>
+                        </div>
+
+                        <button type="submit" class="btn btn-pds-primary w-100 py-2 fw-bold">
+                            <i class="bi bi-box-arrow-in-right me-1"></i> Sign In to Account
+                        </button>
+                    </form>
+
+                    <!-- Fast Demo Account Quick-Fill Helper -->
+                    <div class="mt-4 pt-3 border-top">
+                        <div class="small fw-semibold text-muted text-center mb-2">
+                            <i class="bi bi-lightning-charge-fill text-warning me-1"></i> Quick Test Accounts:
+                        </div>
+                        <div class="d-flex flex-wrap gap-2 justify-content-center">
+                            <button type="button" class="demo-pill" onclick="quickFill('admin@parceldelivery.com', 'Admin@123456')">
+                                <span class="badge-role badge-role-admin py-0 px-1 me-1">Admin</span> admin@parceldelivery.com
+                            </button>
+                            <button type="button" class="demo-pill" onclick="quickFill('customer@parceldelivery.com', 'Customer@123')">
+                                <span class="badge-role badge-role-customer py-0 px-1 me-1">Customer</span> customer@parceldelivery.com
+                            </button>
+                            <button type="button" class="demo-pill" onclick="quickFill('agent@parceldelivery.com', 'Agent@123')">
+                                <span class="badge-role badge-role-agent py-0 px-1 me-1">Agent</span> agent@parceldelivery.com
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-4 pt-2">
+                        <span class="text-muted small">Don't have an account?</span>
+                        <a asp-action="Register" class="text-primary fw-semibold small text-decoration-none ms-1">Register as Customer</a>
+                        <span class="text-muted small mx-1">&bull;</span>
+                        <a asp-action="RegisterAgent" class="text-success fw-semibold small text-decoration-none">Join as Agent</a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function quickFill(email, password) {
+            document.getElementById('loginEmail').value = email;
+            document.getElementById('loginPassword').value = password;
+        }
+    </script>
+}

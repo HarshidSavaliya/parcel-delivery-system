@@ -1,0 +1,180 @@
+@model IReadOnlyList<ParcelDeliverySystem.ViewModels.Agent.AvailableRequestViewModel>
+@using ParcelDeliverySystem.Models.Enums
+@{
+    ViewData["Title"] = "Available Pickup Requests";
+    var agentAvailability = ViewBag.AgentAvailability is AgentAvailabilityStatus status ? status : AgentAvailabilityStatus.Offline;
+}
+
+<div class="container py-4">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <h3 class="fw-bold mb-1">Available Delivery Pool</h3>
+                <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1 fw-bold">
+                    @(Model?.Count ?? 0) nearby requests
+                </span>
+            </div>
+            <p class="text-muted small mb-0">Browse unassigned parcel requests sorted by proximity to your current dispatch location.</p>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            @if (agentAvailability == AgentAvailabilityStatus.Available)
+            {
+                <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill fw-semibold">
+                    <i class="bi bi-circle-fill text-success me-1" style="font-size: 0.6rem;"></i> You are Available
+                </span>
+            }
+            else if (agentAvailability == AgentAvailabilityStatus.Busy)
+            {
+                <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-3 py-2 rounded-pill fw-semibold">
+                    <i class="bi bi-circle-fill text-warning me-1" style="font-size: 0.6rem;"></i> Status: Busy (Active Delivery)
+                </span>
+            }
+            else
+            {
+                <form asp-action="ToggleAvailability" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="status" value="@AgentAvailabilityStatus.Available" />
+                    <button type="submit" class="btn btn-success btn-sm rounded-pill px-3">
+                        <i class="bi bi-toggle-on me-1"></i> Go Available to Accept
+                    </button>
+                </form>
+            }
+        </div>
+    </div>
+
+    @if (agentAvailability != AgentAvailabilityStatus.Available)
+    {
+        <div class="alert alert-warning border-0 shadow-sm d-flex align-items-center justify-content-between mb-4" style="border-radius: 12px;">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-exclamation-triangle-fill fs-4 text-warning"></i>
+                <div>
+                    <span class="fw-bold">Your current status is @agentAvailability.</span>
+                    <span class="small text-muted d-block">Only delivery agents with status <strong>Available</strong> can accept new pickup requests.</span>
+                </div>
+            </div>
+            @if (agentAvailability == AgentAvailabilityStatus.Offline)
+            {
+                <form asp-action="ToggleAvailability" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="status" value="@AgentAvailabilityStatus.Available" />
+                    <button type="submit" class="btn btn-warning btn-sm fw-bold">Switch to Available</button>
+                </form>
+            }
+        </div>
+    }
+
+    @if (Model != null && Model.Any())
+    {
+        <div class="row g-4">
+            @foreach (var request in Model)
+            {
+                <div class="col-lg-6">
+                    <div class="pds-card h-100 shadow-sm border-0 position-relative p-4" style="border-radius: 16px;">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <span class="badge bg-light text-primary border fw-bold font-monospace px-2 py-1">
+                                        @request.TrackingId
+                                    </span>
+                                    <span class="badge @(request.DeliveryType == DeliveryType.SameDay ? "bg-danger" : request.DeliveryType == DeliveryType.Express ? "bg-warning text-dark" : "bg-info-subtle text-info") rounded-pill">
+                                        @request.DeliveryType
+                                    </span>
+                                </div>
+                                <span class="small text-muted">Booked @request.BookingTime.ToString("MMM dd, hh:mm tt")</span>
+                            </div>
+                            
+                            <div class="text-end">
+                                <div class="fs-4 fw-bold text-success">$@request.DeliveryCharge.ToString("F2")</div>
+                                <div class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 rounded-pill small">
+                                    <i class="bi bi-geo-alt-fill me-1"></i> @request.FormattedDistance away
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pickup & Delivery Addresses -->
+                        <div class="p-3 bg-light rounded mb-3 border">
+                            <div class="d-flex align-items-start gap-2 mb-2 pb-2 border-bottom">
+                                <i class="bi bi-box-arrow-up text-primary fs-5 mt-1"></i>
+                                <div class="flex-grow-1">
+                                    <div class="extra-small text-muted text-uppercase fw-bold" style="font-size: 0.7rem;">Pickup Address</div>
+                                    <div class="fw-semibold small">@request.PickupAddress.FormattedAddress</div>
+                                    <div class="text-muted extra-small">Sender: @request.PickupAddress.RecipientName (@request.PickupAddress.PhoneNumber)</div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex align-items-start gap-2">
+                                <i class="bi bi-geo-alt-fill text-danger fs-5 mt-1"></i>
+                                <div class="flex-grow-1">
+                                    <div class="extra-small text-muted text-uppercase fw-bold" style="font-size: 0.7rem;">Delivery Destination</div>
+                                    <div class="fw-semibold small">@request.DeliveryAddress.FormattedAddress</div>
+                                    <div class="text-muted extra-small">Receiver: @request.DeliveryAddress.RecipientName (@request.DeliveryAddress.PhoneNumber)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Parcel Specifications & Travel ETA -->
+                        <div class="row g-2 text-center small mb-3">
+                            <div class="col-4">
+                                <div class="p-2 border rounded bg-white">
+                                    <div class="text-muted extra-small" style="font-size: 0.7rem;">Weight</div>
+                                    <div class="fw-bold">@request.WeightKg.ToString("F1") kg</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="p-2 border rounded bg-white">
+                                    <div class="text-muted extra-small" style="font-size: 0.7rem;">Package</div>
+                                    <div class="fw-bold text-truncate">@request.ParcelType</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="p-2 border rounded bg-white">
+                                    <div class="text-muted extra-small" style="font-size: 0.7rem;">Pickup ETA</div>
+                                    <div class="fw-bold text-primary">~@request.FormattedTravelTime</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(request.SpecialInstructions))
+                        {
+                            <div class="alert alert-info py-2 px-3 small mb-3">
+                                <i class="bi bi-info-circle me-1"></i> <strong>Note:</strong> @request.SpecialInstructions
+                            </div>
+                        }
+
+                        <!-- Action Button -->
+                        <div class="d-flex gap-2">
+                            <a asp-controller="Tracking" asp-action="Track" asp-route-trackingId="@request.TrackingId" target="_blank" class="btn btn-outline-secondary btn-sm flex-fill">
+                                <i class="bi bi-map me-1"></i> View Route
+                            </a>
+                            <form asp-action="AcceptRequest" method="post" class="flex-fill">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="parcelId" value="@request.ParcelId" />
+                                <button type="submit" class="btn btn-success btn-sm w-100 fw-bold" 
+                                        @(agentAvailability != AgentAvailabilityStatus.Available ? "disabled" : "")
+                                        onclick="return confirm('Accept this delivery request for parcel @request.TrackingId?');">
+                                    <i class="bi bi-check2-circle me-1"></i> Accept Request
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="pds-card p-5 text-center shadow-sm border-0">
+            <div class="avatar-circle mx-auto mb-3" style="width: 70px; height: 70px; background: #f0fdf4; color: #16a34a; font-size: 2rem; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
+                <i class="bi bi-inbox-fill"></i>
+            </div>
+            <h4 class="fw-bold">No Available Requests in Your Pool</h4>
+            <p class="text-muted small mb-4" style="max-width: 500px; margin: 0 auto;">
+                All shipments have been dispatched or accepted by other partners. Keep your status as <strong>Available</strong> to receive immediate assignments when new orders arrive.
+            </p>
+            <a asp-action="Dashboard" class="btn btn-pds-outline btn-sm">
+                <i class="bi bi-speedometer2 me-1"></i> Return to Dashboard
+            </a>
+        </div>
+    }
+</div>

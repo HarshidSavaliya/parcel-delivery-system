@@ -1,0 +1,107 @@
+@model ParcelDeliverySystem.ViewModels.Admin.CreateAgentViewModel
+@using ParcelDeliverySystem.Models.Enums
+@{
+    ViewData["Title"] = "Provision Delivery Agent";
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a asp-action="Dashboard">Admin Dashboard</a></li>
+                    <li class="breadcrumb-item"><a asp-action="Agents">Fleet</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Add Agent</li>
+                </ol>
+            </nav>
+
+            <div class="pds-card p-4 shadow-sm border-0" style="border-radius: 16px;">
+                <div class="d-flex align-items-center gap-2 mb-3 border-bottom pb-2">
+                    <i class="bi bi-person-plus-fill fs-4 text-warning"></i>
+                    <div>
+                        <h4 class="fw-bold mb-0">Provision New Delivery Courier</h4>
+                        <p class="text-muted small mb-0">Register a new courier driver account with vehicle credentials.</p>
+                    </div>
+                </div>
+
+                <form asp-action="CreateAgent" method="post">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-person me-1 text-primary"></i> Personal & Contact Credentials</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label asp-for="FullName" class="form-label small fw-bold"></label>
+                            <input asp-for="FullName" class="form-control" placeholder="e.g. John Courier" />
+                            <span asp-validation-for="FullName" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Email" class="form-label small fw-bold"></label>
+                            <input asp-for="Email" class="form-control" placeholder="agent@parceldelivery.com" />
+                            <span asp-validation-for="Email" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="PhoneNumber" class="form-label small fw-bold"></label>
+                            <input asp-for="PhoneNumber" class="form-control" placeholder="+91 9876543210" />
+                            <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Password" class="form-label small fw-bold"></label>
+                            <input asp-for="Password" class="form-control" placeholder="Initial temporary password" />
+                            <span asp-validation-for="Password" class="text-danger small"></span>
+                        </div>
+                        <div class="col-12">
+                            <label asp-for="Address" class="form-label small fw-bold"></label>
+                            <input asp-for="Address" class="form-control" placeholder="Base Depot / Hub Address, City, Postal Code" />
+                            <span asp-validation-for="Address" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-truck me-1 text-primary"></i> Vehicle & Dispatch Configuration</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label asp-for="VehicleType" class="form-label small fw-bold"></label>
+                            <select asp-for="VehicleType" class="form-select">
+                                <option value="Motorcycle / Scooter">Motorcycle / Scooter</option>
+                                <option value="Electric Cargo Bike">Electric Cargo Bike</option>
+                                <option value="Delivery Van">Delivery Van</option>
+                                <option value="Compact Car">Compact Car</option>
+                                <option value="Standard Truck">Standard Truck</option>
+                            </select>
+                            <span asp-validation-for="VehicleType" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="VehiclePlateNumber" class="form-label small fw-bold"></label>
+                            <input asp-for="VehiclePlateNumber" class="form-control font-monospace" placeholder="e.g. KA-01-AB-1234" />
+                            <span asp-validation-for="VehiclePlateNumber" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="DrivingLicenseNumber" class="form-label small fw-bold"></label>
+                            <input asp-for="DrivingLicenseNumber" class="form-control font-monospace" placeholder="e.g. DL-0420110012345" />
+                            <span asp-validation-for="DrivingLicenseNumber" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="AvailabilityStatus" class="form-label small fw-bold"></label>
+                            <select asp-for="AvailabilityStatus" class="form-select">
+                                <option value="@AgentAvailabilityStatus.Available">🟢 Available (Immediately accepting)</option>
+                                <option value="@AgentAvailabilityStatus.Offline">⚪ Offline</option>
+                            </select>
+                            <span asp-validation-for="AvailabilityStatus" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 border-top pt-3">
+                        <a asp-action="Agents" class="btn btn-outline-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-warning text-dark fw-bold px-4">
+                            <i class="bi bi-check-lg me-1"></i> Provision Agent
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

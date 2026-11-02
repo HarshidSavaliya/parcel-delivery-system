@@ -1,0 +1,204 @@
+@model ParcelDeliverySystem.ViewModels.Parcels.ParcelDetailsViewModel?
+@using ParcelDeliverySystem.Models.Enums
+@{
+    ViewData["Title"] = "Track Shipment";
+    var query = ViewBag.TrackingQuery as string;
+}
+
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+
+            <div class="text-center mb-4">
+                <div class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill mb-2 small fw-semibold">
+                    <i class="bi bi-broadcast me-1"></i> Live Geoapify Telemetry
+                </div>
+                <h2 class="fw-bold mb-1">Track Your Shipment</h2>
+                <p class="text-secondary small">Enter your unique tracking code to view real-time transit status, route map, and delivery history.</p>
+            </div>
+
+            <!-- Tracking Lookup Form -->
+            <div class="pds-card p-2 shadow-lg mb-4 border-0" style="border-radius: 16px;">
+                <form asp-controller="Tracking" asp-action="Track" method="get" class="d-flex flex-column flex-sm-row gap-2">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-0 text-primary fs-5 ps-3">
+                            <i class="bi bi-upc-scan"></i>
+                        </span>
+                        <input type="text" name="trackingId" class="form-control border-0 shadow-none ps-2" 
+                               value="@query" placeholder="Enter Tracking Number (e.g. PDS-20261003-XXXX)..." autofocus required />
+                    </div>
+                    <button type="submit" class="btn btn-pds-primary px-4 py-2 text-nowrap">
+                        <i class="bi bi-search me-1"></i> Track Parcel
+                    </button>
+                </form>
+            </div>
+
+            @if (!string.IsNullOrEmpty(query))
+            {
+                if (Model == null || Model.Parcel == null)
+                {
+                    <div class="pds-card text-center p-5 shadow-sm border-0" style="border-radius: 16px;">
+                        <div class="stat-icon warning mx-auto mb-3" style="width: 60px; height: 60px;">
+                            <i class="bi bi-question-circle-fill fs-2"></i>
+                        </div>
+                        <h4 class="fw-bold mb-1">Shipment Not Found</h4>
+                        <p class="text-secondary mb-3">
+                            We could not find any parcel matching tracking code <span class="tracking-code text-danger fw-bold">@query</span>.
+                        </p>
+                        <span class="text-muted small">Please verify the tracking code format (e.g. <code>PDS-20261003-0001</code>) and try again.</span>
+                    </div>
+                }
+                else
+                {
+                    var p = Model.Parcel;
+                    <div class="pds-card shadow-lg border-0 mb-4 overflow-hidden" style="border-radius: 20px;">
+                        <div class="pds-card-header bg-light p-4 border-bottom">
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                <div>
+                                    <span class="text-muted extra-small d-block text-uppercase fw-bold">Shipment Tracking ID</span>
+                                    <span class="tracking-code fs-3 fw-bold text-primary font-monospace">@p.TrackingId</span>
+                                    <div class="small text-muted mt-1">
+                                        <i class="bi bi-calendar3 me-1"></i> Booked on: <strong>@p.BookingDate.ToString("MMMM dd, yyyy 'at' hh:mm tt")</strong>
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    @{
+                                        var badgeClass = p.Status switch
+                                        {
+                                            ParcelStatus.Booked => "bg-info-subtle text-info border border-info-subtle",
+                                            ParcelStatus.PendingPickup => "bg-warning-subtle text-warning border border-warning-subtle",
+                                            ParcelStatus.AgentAssigned => "bg-primary-subtle text-primary border border-primary-subtle",
+                                            ParcelStatus.PickedUp => "bg-primary text-white",
+                                            ParcelStatus.InTransit => "bg-primary text-white",
+                                            ParcelStatus.OutForDelivery => "bg-warning text-dark fw-bold",
+                                            ParcelStatus.Delivered => "bg-success text-white fw-bold",
+                                            ParcelStatus.Cancelled => "bg-danger-subtle text-danger border border-danger-subtle",
+                                            _ => "bg-secondary text-white"
+                                        };
+                                    }
+                                    <span class="badge rounded-pill @badgeClass px-3 py-2 fs-6">@p.Status</span>
+                                    <div class="extra-small text-muted mt-1">Tier: <strong>@p.DeliveryType</strong> &bull; Fare: <strong>$@p.DeliveryCharge.ToString("F2")</strong></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Leaflet Interactive Map -->
+                        <div id="trackingPublicMap" style="height: 320px; width: 100%;"></div>
+
+                        <div class="pds-card-body p-4">
+                            <!-- Telemetry Metrics Bar -->
+                            <div class="row g-2 text-center small mb-4">
+                                <div class="col-6 col-md-3">
+                                    <div class="p-2 border rounded bg-light">
+                                        <div class="text-muted extra-small" style="font-size: 0.7rem;">Package Type</div>
+                                        <div class="fw-bold text-truncate">@p.ParcelType</div>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="p-2 border rounded bg-light">
+                                        <div class="text-muted extra-small" style="font-size: 0.7rem;">Weight</div>
+                                        <div class="fw-bold">@p.Weight.ToString("F1") kg</div>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="p-2 border rounded bg-light">
+                                        <div class="text-muted extra-small" style="font-size: 0.7rem;">Route Distance</div>
+                                        <div class="fw-bold text-primary">@p.Distance.ToString("F1") km</div>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="p-2 border rounded bg-light">
+                                        <div class="text-muted extra-small" style="font-size: 0.7rem;">Estimated Transit</div>
+                                        <div class="fw-bold text-success">~@p.EstimatedDurationMinutes mins</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Locations Row -->
+                            <div class="row g-3 mb-4 pb-4 border-bottom">
+                                <div class="col-md-6">
+                                    <div class="p-3 border rounded bg-light h-100">
+                                        <div class="d-flex align-items-center gap-2 mb-1">
+                                            <div class="badge bg-primary p-2 rounded-circle"><i class="bi bi-box-seam"></i></div>
+                                            <h6 class="fw-bold mb-0">Pickup Origin</h6>
+                                        </div>
+                                        <div class="small text-secondary ps-4">@p.PickupAddress.FormattedAddress</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="p-3 border rounded bg-light h-100">
+                                        <div class="d-flex align-items-center gap-2 mb-1">
+                                            <div class="badge bg-success p-2 rounded-circle"><i class="bi bi-geo-alt"></i></div>
+                                            <h6 class="fw-bold mb-0">Delivery Destination</h6>
+                                        </div>
+                                        <div class="small text-secondary ps-4">@p.DeliveryAddress.FormattedAddress</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Complete Status History Timeline -->
+                            <h5 class="fw-bold mb-3"><i class="bi bi-clock-history me-2 text-primary"></i>Complete Status History</h5>
+                            <div class="timeline ps-2">
+                                @if (p.StatusHistory != null && p.StatusHistory.Any())
+                                {
+                                    @foreach (var log in p.StatusHistory.OrderBy(s => s.Timestamp))
+                                    {
+                                        <div class="d-flex gap-3 mb-3 pb-3 border-bottom last-border-none">
+                                            <div class="avatar-circle flex-shrink-0 mt-1" style="width: 32px; height: 32px; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
+                                                <i class="bi bi-check2"></i>
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div class="fw-bold text-dark">@log.Status</div>
+                                                    <div class="small text-primary fw-semibold font-monospace">
+                                                        @log.Timestamp.ToString("dd MMM hh:mm tt")
+                                                    </div>
+                                                </div>
+                                                @if (!string.IsNullOrEmpty(log.Notes))
+                                                {
+                                                    <div class="small text-secondary mt-1">@log.Notes</div>
+                                                }
+                                                @if (!string.IsNullOrEmpty(log.UpdatedByRole))
+                                                {
+                                                    <div class="extra-small text-muted" style="font-size: 0.75rem;">
+                                                        Logged by: <span class="badge bg-light text-dark border">@log.UpdatedByRole</span>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                                else
+                                {
+                                    <div class="text-muted small">No audit history records available.</div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @if (Model?.Parcel != null)
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const pLat = parseFloat('@Model.Parcel.PickupLatitude') || 0;
+                const pLon = parseFloat('@Model.Parcel.PickupLongitude') || 0;
+                const dLat = parseFloat('@Model.Parcel.DeliveryLatitude') || 0;
+                const dLon = parseFloat('@Model.Parcel.DeliveryLongitude') || 0;
+                const routeGeoJsonStr = @Html.Raw(Json.Serialize(Model.Parcel.RouteGeometryJson));
+                const parcelStatus = '@Model.Parcel.Status.ToString()';
+
+                if (window.ParcelMap) {
+                    window.ParcelMap.initLiveTrackingMap('trackingPublicMap', pLat, pLon, dLat, dLon, routeGeoJsonStr, parcelStatus);
+                }
+            });
+        </script>
+    }
+}

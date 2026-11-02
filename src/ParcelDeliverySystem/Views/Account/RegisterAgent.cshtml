@@ -1,0 +1,127 @@
+@model ParcelDeliverySystem.ViewModels.Auth.AgentRegisterViewModel
+@{
+    ViewData["Title"] = "Delivery Partner Onboarding";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-9 col-lg-7">
+            <div class="pds-card shadow-lg border-0" style="border-radius: 20px;">
+                <div class="pds-card-body p-4 p-md-5">
+
+                    <div class="text-center mb-4">
+                        <div class="brand-icon mx-auto mb-3" style="width: 50px; height: 50px; font-size: 1.4rem; background: linear-gradient(135deg, #059669 0%, #10b981 100%);">
+                            <i class="bi bi-bicycle"></i>
+                        </div>
+                        <h3 class="fw-bold mb-1">Become a Delivery Partner</h3>
+                        <p class="text-muted small">Join our fleet, earn competitive rates, and deliver shipments in your city</p>
+                    </div>
+
+                    <form asp-action="RegisterAgent" method="post">
+                        @Html.AntiForgeryToken()
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small" role="alert"></div>
+
+                        <h6 class="fw-bold text-dark border-bottom pb-2 mb-3">1. Personal Details</h6>
+
+                        <div class="mb-3">
+                            <label asp-for="FullName" class="form-label small fw-semibold text-secondary">Full Legal Name</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-person"></i></span>
+                                <input asp-for="FullName" class="form-control border-start-0" placeholder="e.g. Marcus Vance" />
+                            </div>
+                            <span asp-validation-for="FullName" class="text-danger small"></span>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="Email" class="form-label small fw-semibold text-secondary">Email Address</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-envelope"></i></span>
+                                    <input asp-for="Email" class="form-control border-start-0" placeholder="agent@example.com" />
+                                </div>
+                                <span asp-validation-for="Email" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="PhoneNumber" class="form-label small fw-semibold text-secondary">Phone Number</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-telephone"></i></span>
+                                    <input asp-for="PhoneNumber" class="form-control border-start-0" placeholder="+1 (555) 000-0000" />
+                                </div>
+                                <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <h6 class="fw-bold text-dark border-bottom pb-2 mb-3 mt-4">2. Fleet & Logistics Info</h6>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-4">
+                                <label asp-for="VehicleType" class="form-label small fw-semibold text-secondary">Vehicle Type</label>
+                                <select asp-for="VehicleType" class="form-select">
+                                    <option value="Motorcycle / Scooter">Motorcycle / Scooter</option>
+                                    <option value="Van / Courier Van">Van / Courier Van</option>
+                                    <option value="Car / Sedan">Car / Sedan</option>
+                                    <option value="Bicycle / E-Bike">Bicycle / E-Bike</option>
+                                    <option value="Light Commercial Truck">Light Commercial Truck</option>
+                                </select>
+                                <span asp-validation-for="VehicleType" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="VehiclePlateNumber" class="form-label small fw-semibold text-secondary">License Plate</label>
+                                <input asp-for="VehiclePlateNumber" class="form-control" placeholder="e.g. DL-7788-XP" />
+                                <span asp-validation-for="VehiclePlateNumber" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="DrivingLicenseNumber" class="form-label small fw-semibold text-secondary">Driving License No.</label>
+                                <input asp-for="DrivingLicenseNumber" class="form-control" placeholder="e.g. DL-US-9938210" />
+                                <span asp-validation-for="DrivingLicenseNumber" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <h6 class="fw-bold text-dark border-bottom pb-2 mb-3 mt-4">3. Security & Credentials</h6>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="Password" class="form-label small fw-semibold text-secondary">Password</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-lock"></i></span>
+                                    <input asp-for="Password" class="form-control border-start-0" placeholder="••••••••" />
+                                </div>
+                                <span asp-validation-for="Password" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="ConfirmPassword" class="form-label small fw-semibold text-secondary">Confirm Password</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-shield-check"></i></span>
+                                    <input asp-for="ConfirmPassword" class="form-control border-start-0" placeholder="••••••••" />
+                                </div>
+                                <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-4 form-check">
+                            <input asp-for="AgreeToTerms" class="form-check-input" />
+                            <label asp-for="AgreeToTerms" class="form-check-label small text-secondary">
+                                I agree to the <a asp-controller="Home" asp-action="Privacy" target="_blank" class="text-primary text-decoration-none">Delivery Partner Agreement & Safety Guidelines</a>
+                            </label>
+                            <div><span asp-validation-for="AgreeToTerms" class="text-danger small"></span></div>
+                        </div>
+
+                        <button type="submit" class="btn btn-success w-100 py-2 fw-bold text-white shadow-sm" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); border: none;">
+                            <i class="bi bi-truck me-1"></i> Submit Partner Application
+                        </button>
+                    </form>
+
+                    <div class="text-center mt-4 pt-2 border-top">
+                        <span class="text-muted small">Already a registered partner?</span>
+                        <a asp-action="Login" class="text-primary fw-semibold small text-decoration-none ms-1">Sign In</a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

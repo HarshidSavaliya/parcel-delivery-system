@@ -1,0 +1,253 @@
+@model ParcelDeliverySystem.ViewModels.Admin.AdminReportViewModel
+@using ParcelDeliverySystem.Models.Enums
+@{
+    ViewData["Title"] = "Executive Logistics & Fleet Performance Report";
+}
+
+<div class="container py-4">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <h3 class="fw-bold mb-1">Operational Reports & Analytics</h3>
+            <p class="text-muted small mb-0">Audited operational metrics, revenue generated, daily shipment throughput, and courier fulfillment rates.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary btn-sm rounded-pill" onclick="window.print()">
+                <i class="bi bi-printer me-1"></i> Print / Export Report
+            </button>
+        </div>
+    </div>
+
+    <!-- Date Range Filter -->
+    <div class="pds-card p-3 mb-4 border-0 shadow-sm" style="border-radius: 14px;">
+        <form asp-action="Reports" method="get" class="row g-2 align-items-center">
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text bg-white small">From</span>
+                    <input type="date" name="dateFrom" class="form-control" value="@(Model.DateFrom.HasValue ? Model.DateFrom.Value.ToString("yyyy-MM-dd") : "")" />
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text bg-white small">To</span>
+                    <input type="date" name="dateTo" class="form-control" value="@(Model.DateTo.HasValue ? Model.DateTo.Value.ToString("yyyy-MM-dd") : "")" />
+                </div>
+            </div>
+            <div class="col-md-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary flex-fill">
+                    <i class="bi bi-filter me-1"></i> Generate Report
+                </button>
+                <a asp-action="Reports" class="btn btn-outline-secondary">Reset</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Summary Statistics Metrics Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-md-4 col-lg-2">
+            <div class="stat-card">
+                <div class="stat-icon primary">
+                    <i class="bi bi-box-seam"></i>
+                </div>
+                <div>
+                    <div class="stat-value">@Model.TotalParcelsCount</div>
+                    <div class="stat-label">Total Parcels</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-md-4 col-lg-2">
+            <div class="stat-card">
+                <div class="stat-icon success">
+                    <i class="bi bi-check-circle-fill"></i>
+                </div>
+                <div>
+                    <div class="stat-value">@Model.DeliveredParcelsCount</div>
+                    <div class="stat-label">Delivered</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-md-4 col-lg-2">
+            <div class="stat-card">
+                <div class="stat-icon warning">
+                    <i class="bi bi-hourglass-split"></i>
+                </div>
+                <div>
+                    <div class="stat-value">@Model.PendingParcelsCount</div>
+                    <div class="stat-label">Pending / Unclaimed</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-md-4 col-lg-2">
+            <div class="stat-card">
+                <div class="stat-icon accent">
+                    <i class="bi bi-truck"></i>
+                </div>
+                <div>
+                    <div class="stat-value">@Model.InTransitParcelsCount</div>
+                    <div class="stat-label">In Transit</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-md-4 col-lg-2">
+            <div class="stat-card">
+                <div class="stat-icon warning">
+                    <i class="bi bi-x-octagon"></i>
+                </div>
+                <div>
+                    <div class="stat-value">@Model.CancelledParcelsCount</div>
+                    <div class="stat-label">Cancelled</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-md-4 col-lg-2">
+            <div class="stat-card">
+                <div class="stat-icon primary">
+                    <i class="bi bi-currency-dollar"></i>
+                </div>
+                <div>
+                    <div class="stat-value">$@Model.TotalRevenueGenerated.ToString("F0")</div>
+                    <div class="stat-label">Total Revenue</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Agent Courier Fleet Performance Report Table -->
+    <div class="pds-card shadow-sm border-0 mb-4 overflow-hidden" style="border-radius: 16px;">
+        <div class="pds-card-header bg-white py-3 px-4 border-bottom">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-person-badge-fill text-warning"></i>
+                    <h5 class="fw-bold mb-0">Delivery Partner Performance Audit</h5>
+                </div>
+                <span class="badge bg-light text-dark border">
+                    @Model.AgentPerformanceList.Count Agents Audited
+                </span>
+            </div>
+        </div>
+        <div class="pds-card-body p-0">
+            @if (Model.AgentPerformanceList.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 small">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Courier Partner</th>
+                                <th>Vehicle</th>
+                                <th>Assigned Runs</th>
+                                <th>Delivered (Success)</th>
+                                <th>Active Drops</th>
+                                <th>Failed Exceptions</th>
+                                <th>Fulfillment Rate</th>
+                                <th>Rating</th>
+                                <th>Availability</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var agent in Model.AgentPerformanceList)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold text-dark">@agent.AgentName</div>
+                                        <div class="text-muted extra-small">@agent.PhoneNumber</div>
+                                    </td>
+                                    <td><span class="text-muted">@agent.VehicleType</span></td>
+                                    <td><span class="fw-semibold">@agent.AssignedDeliveriesCount</span></td>
+                                    <td><span class="fw-bold text-success">@agent.CompletedDeliveriesCount</span></td>
+                                    <td><span class="badge bg-primary-subtle text-primary">@agent.ActiveDeliveriesCount</span></td>
+                                    <td>
+                                        @if (agent.FailedDeliveriesCount > 0)
+                                        {
+                                            <span class="badge bg-danger-subtle text-danger">@agent.FailedDeliveriesCount</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">0</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="progress flex-grow-1" style="height: 6px; width: 60px;">
+                                                <div class="progress-bar @(agent.SuccessRatePercentage >= 90 ? "bg-success" : agent.SuccessRatePercentage >= 70 ? "bg-warning" : "bg-danger")" style="width: @agent.SuccessRatePercentage%;"></div>
+                                            </div>
+                                            <span class="fw-bold">@agent.SuccessRatePercentage.ToString("F1")%</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="text-warning fw-bold">@agent.Rating.ToString("F1") ★</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge @(agent.AvailabilityStatus == AgentAvailabilityStatus.Available ? "bg-success-subtle text-success" : agent.AvailabilityStatus == AgentAvailabilityStatus.Busy ? "bg-warning-subtle text-warning" : "bg-secondary-subtle text-secondary") rounded-pill">
+                                            @agent.AvailabilityStatus
+                                        </span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center p-4 text-muted small">No courier agents registered in fleet.</div>
+            }
+        </div>
+    </div>
+
+    <!-- Daily Shipment Breakdown Table -->
+    <div class="pds-card shadow-sm border-0 overflow-hidden" style="border-radius: 16px;">
+        <div class="pds-card-header bg-white py-3 px-4 border-bottom">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-calendar3 text-primary"></i>
+                <h5 class="fw-bold mb-0">Daily Volume & Revenue Breakdown</h5>
+            </div>
+        </div>
+        <div class="pds-card-body p-0">
+            @if (Model.DailyVolumeBreakdown.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 small">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Parcels Booked</th>
+                                <th>Delivered Count</th>
+                                <th>Cancelled Count</th>
+                                <th>Revenue Generated</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var day in Model.DailyVolumeBreakdown)
+                            {
+                                <tr>
+                                    <td class="fw-semibold">@day.FormattedDate</td>
+                                    <td><span class="badge bg-light text-dark border">@day.BookedCount</span></td>
+                                    <td><span class="badge bg-success-subtle text-success">@day.DeliveredCount</span></td>
+                                    <td>
+                                        @if (day.CancelledCount > 0)
+                                        {
+                                            <span class="badge bg-danger-subtle text-danger">@day.CancelledCount</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">0</span>
+                                        }
+                                    </td>
+                                    <td><span class="fw-bold text-success">$@day.Revenue.ToString("F2")</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center p-4 text-muted small">No daily shipment data for the selected period.</div>
+            }
+        </div>
+    </div>
+</div>

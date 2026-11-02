@@ -1,0 +1,59 @@
+@{
+    ViewData["Title"] = "Access Denied";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="pds-card text-center p-4 p-md-5 shadow-lg border-0" style="border-radius: 20px;">
+                <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-4" 
+                     style="width: 80px; height: 80px; background: rgba(239, 68, 68, 0.12); color: var(--danger);">
+                    <i class="bi bi-shield-slash-fill fs-1"></i>
+                </div>
+
+                <div class="badge bg-danger-subtle text-danger border border-danger-subtle mb-3 px-3 py-2" style="font-size: 0.85rem; border-radius: 20px;">
+                    HTTP 403 &bull; Authorization Restriction
+                </div>
+
+                <h2 class="fw-bold mb-2">Access Restricted</h2>
+                <p class="text-secondary mb-4">
+                    You do not have the necessary role permissions to access this portal page. 
+                    If you believe this is an error, please switch accounts or contact your system administrator.
+                </p>
+
+                <div class="d-flex flex-wrap justify-content-center gap-3">
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <a asp-controller="Admin" asp-action="Dashboard" class="btn btn-pds-primary">
+                                <i class="bi bi-speedometer2 me-1"></i> Admin Dashboard
+                            </a>
+                        }
+                        else if (User.IsInRole("DeliveryAgent"))
+                        {
+                            <a asp-controller="DeliveryAgent" asp-action="Dashboard" class="btn btn-pds-primary">
+                                <i class="bi bi-speedometer2 me-1"></i> Agent Dashboard
+                            </a>
+                        }
+                        else
+                        {
+                            <a asp-controller="Customer" asp-action="Dashboard" class="btn btn-pds-primary">
+                                <i class="bi bi-speedometer2 me-1"></i> Customer Dashboard
+                            </a>
+                        }
+                    }
+                    else
+                    {
+                        <a asp-controller="Account" asp-action="Login" class="btn btn-pds-primary">
+                            <i class="bi bi-box-arrow-in-right me-1"></i> Sign In
+                        </a>
+                    }
+                    <a asp-controller="Home" asp-action="Index" class="btn btn-pds-outline">
+                        <i class="bi bi-house-door me-1"></i> Home Page
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
